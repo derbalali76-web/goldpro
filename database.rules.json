@@ -1,0 +1,30 @@
+{
+  "rules": {
+    "goldpro": {
+      "_users": {
+        ".read": true,
+        ".write": "auth != null"
+      },
+      "_appcfg": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
+      "$seg1": {
+        "_users": {
+          ".read": true,
+          ".write": "auth != null"
+        },
+        "data": {
+          ".read": "auth != null && auth.token.email === $seg1 + '@goldpro.local'",
+          ".write": "auth != null && auth.token.email === $seg1 + '@goldpro.local'"
+        },
+        "$seg2": {
+          "data": {
+            ".read": "auth != null && auth.token.email === $seg2 + '@goldpro.local'",
+            ".write": "auth != null && auth.token.email === $seg2 + '@goldpro.local'"
+          }
+        }
+      }
+    }
+  }
+}
