@@ -871,7 +871,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v71';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v72';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1822,7 +1822,7 @@ function renderLog(){
                 <br><small style="color:var(--t2)">${o.dt||''} · <span style="color:${bg};font-weight:700">${o.t||''}</span></small>${detailHtml}
             </span>
             <span style="color:${out?'var(--rd)':'var(--gr)'};font-weight:900;font-size:.7rem;white-space:nowrap;margin-top:.1rem">
-                ${out?'−':'+'}${fmt(o.a||0,2)} ${unit}
+                ${out?'−':'+'}${fmt(o.a||0,(o.m==='دينار'||o.m==='دولار')?0:2)} ${unit}
             </span>
             <button class="btndel" onclick="delOp('${o.id}')" style="margin-top:.1rem"><i class="fas fa-trash-alt"></i></button>
         </div>`;
@@ -1995,7 +1995,7 @@ function buildCustomerLogHtml(c,custOps){
             <td style="padding:7px 5px;text-align:center;color:#9ca3af;font-size:12px;border-bottom:1px solid #e5e7eb">${custOps.length-i}</td>
             <td style="padding:7px 6px;font-size:11px;color:#374151;border-bottom:1px solid #e5e7eb;white-space:nowrap">${o.dt||'—'}</td>
             <td style="padding:7px 6px;font-size:12px;font-weight:700;color:${tc};border-bottom:1px solid #e5e7eb">${o.t||'—'}</td>
-            <td style="padding:7px 6px;font-size:13px;font-weight:900;color:${amtColor};border-bottom:1px solid #e5e7eb;white-space:nowrap">${amtSign}${f(o.a,2)} ${unit}</td>
+            <td style="padding:7px 6px;font-size:13px;font-weight:900;color:${amtColor};border-bottom:1px solid #e5e7eb;white-space:nowrap">${amtSign}${f(o.a,(o.m==='دينار'||o.m==='دولار')?0:2)} ${unit}</td>
             <td style="padding:7px 6px;font-size:11px;border-bottom:1px solid #e5e7eb">${detailHtml}</td>
         </tr>`;}).join('');
 
