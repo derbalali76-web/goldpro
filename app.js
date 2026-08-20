@@ -540,7 +540,7 @@ function saveSettings(){
 }
 
 /* ═══════════ OPENING BALANCES (مرة واحدة فقط) ═══════════ */
-const _LIQ_USED_KEY='gp12_liq_set';
+const _liqKey=()=>'gp12_liq_set_'+(typeof _SITE!=='undefined'&&_SITE?_SITE+'_':'')+(_currentUser||'_');
 let _liqDebtCnt=0;
 let _liq730Cnt=0;
 window._add730BarRow=(w,k)=>{
@@ -562,7 +562,7 @@ window._add730BarRow=(w,k)=>{
 window.openLiqEdit=()=>{
     /* السماح بإعادة الإدخال إذا كانت جميع الأرصدة صفراً (استعادة بعد فقدان بيانات) */
     const allZero=B.دينار===0&&B.دولار===0&&g730.length===0&&g24.length===0;
-    if(localStorage.getItem(_LIQ_USED_KEY)&&!allZero){
+    if(localStorage.getItem(_liqKey())&&!allZero){
         toast('⚠️ تم اعتماد الأرصدة الافتتاحية مسبقاً — لا يمكن التكرار إلا عند صفر الرصيد','error');
         return;
     }
@@ -627,7 +627,7 @@ window._addLiqDebtRow=()=>{
 
 window.confirmLiqEdit=()=>{
     const allZero=B.دينار===0&&B.دولار===0&&g730.length===0&&g24.length===0;
-    if(localStorage.getItem(_LIQ_USED_KEY)&&!allZero){
+    if(localStorage.getItem(_liqKey())&&!allZero){
         toast('⚠️ تم اعتماد الأرصدة مسبقاً','error');return;
     }
     const dinar  = readNum('liqDinar');
@@ -687,7 +687,7 @@ window.confirmLiqEdit=()=>{
         }
     );
 
-    try{localStorage.setItem(_LIQ_USED_KEY,'1');}catch(e){}
+    try{localStorage.setItem(_liqKey(),'1');}catch(e){}
     ['liqEditBtn','liqSettingsBtn'].forEach(id=>{
         const el=document.getElementById(id);if(el)el.style.display='none';
     });
@@ -871,7 +871,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v69';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v71';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
