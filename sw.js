@@ -1,5 +1,5 @@
 /* sw.js — Network-First مع Cache offline */
-const CACHE = 'goldpro-v72';
+const CACHE = 'goldpro-v73';
 const ASSETS = [
   './',
   './index.html',
@@ -19,6 +19,12 @@ const ASSETS = [
   './icons/icon-167.png',
   './icons/icon-152.png',
   './icons/icon-120.png',
+  './icons/calc-192.png',
+  './icons/calc-512.png',
+  './icons/calc-180.png',
+  './icons/calc-167.png',
+  './icons/calc-152.png',
+  './icons/calc-120.png',
 ];
 
 /* تثبيت: حفظ الملفات الأساسية في الكاش */

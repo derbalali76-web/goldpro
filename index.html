@@ -7,19 +7,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="GoldPro">
+    <meta name="apple-mobile-web-app-title" content="Calculator">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#f59e0b">
-    <title>GoldPro | نظام إدارة الذهب</title>
-    <link rel="manifest" href="manifest.json?v=72">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=72">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=72">
+    <meta name="theme-color" content="#26282e">
+    <title>Calculator</title>
+    <link rel="manifest" href="manifest.json?v=73">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=73">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=73">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/icon-180.png?v=72">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=72">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png?v=72">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=72">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png?v=72">
+    <link rel="apple-touch-icon" href="icons/icon-180.png?v=73">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=73">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png?v=73">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=73">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png?v=73">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -58,9 +58,81 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=72">
+    <link rel="stylesheet" href="./style.css?v=73">
 </head>
 <body>
+<!-- ═══════════ قناع الآلة الحاسبة (يظهر أولاً · الكود 0505 يكشف التطبيق) ═══════════ -->
+<div id="calcMask">
+  <div class="calc-shell">
+    <div id="calcDisplay" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="ck ck-fn" data-k="C">C</button>
+      <button class="ck ck-fn" data-k="±">±</button>
+      <button class="ck ck-fn" data-k="%">%</button>
+      <button class="ck ck-op" data-k="÷">÷</button>
+      <button class="ck" data-k="7">7</button>
+      <button class="ck" data-k="8">8</button>
+      <button class="ck" data-k="9">9</button>
+      <button class="ck ck-op" data-k="×">×</button>
+      <button class="ck" data-k="4">4</button>
+      <button class="ck" data-k="5">5</button>
+      <button class="ck" data-k="6">6</button>
+      <button class="ck ck-op" data-k="−">−</button>
+      <button class="ck" data-k="1">1</button>
+      <button class="ck" data-k="2">2</button>
+      <button class="ck" data-k="3">3</button>
+      <button class="ck ck-op" data-k="+">+</button>
+      <button class="ck ck-zero" data-k="0">0</button>
+      <button class="ck" data-k=".">.</button>
+      <button class="ck ck-op" data-k="=">=</button>
+    </div>
+  </div>
+</div>
+<style>
+  #calcMask{position:fixed;inset:0;z-index:2147483647;background:#0b0b0d;display:flex;flex-direction:column;justify-content:flex-end;
+    font-family:-apple-system,"Segoe UI",Arial,sans-serif;padding:0 12px 26px;box-sizing:border-box;overflow:hidden}
+  #calcMask .calc-shell{max-width:440px;width:100%;margin:0 auto}
+  #calcMask .calc-display{color:#fff;font-size:clamp(48px,16vw,88px);font-weight:300;text-align:left;direction:ltr;
+    padding:24px 14px;min-height:96px;word-break:break-all;line-height:1.05}
+  #calcMask .calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  #calcMask .ck{border:none;border-radius:50%;aspect-ratio:1/1;font-size:clamp(22px,7vw,34px);font-weight:500;
+    background:#333;color:#fff;cursor:pointer;user-select:none;transition:filter .1s;display:flex;align-items:center;justify-content:center}
+  #calcMask .ck:active{filter:brightness(1.4)}
+  #calcMask .ck-fn{background:#a5a5a5;color:#000}
+  #calcMask .ck-op{background:#ff9f0a;color:#fff}
+  #calcMask .ck-zero{grid-column:span 2;aspect-ratio:auto;border-radius:999px;justify-content:flex-start;padding-left:28px}
+</style>
+<script>
+(function(){
+  /* الحاسبة تظهر دائماً أولاً. الكود السرّي 0505 = فتح التطبيق. */
+  var SECRET='0505';
+  var d=document.getElementById('calcDisplay');
+  var cur='0', prev=null, op=null, fresh=true, keyseq='';
+  function show(v){ d.textContent=String(v).length>12?Number(v).toPrecision(9):v; }
+  function calc(a,b,o){a=parseFloat(a);b=parseFloat(b);return o==='+'?a+b:o==='−'?a-b:o==='×'?a*b:o==='÷'?(b?a/b:0):b;}
+  function reveal(){
+    try{
+      var m=document.getElementById('calcMask'); if(m)m.remove();
+      document.documentElement.classList.add('gp-unmasked');
+      if(window._gpBoot&&!window._gpBooted){ window._gpBooted=true; window._gpBoot(); }
+    }catch(e){}
+  }
+  function press(k){
+    /* تتبّع الكود السرّي عبر الأرقام المتتالية */
+    if(/[0-9]/.test(k)){ keyseq=(keyseq+k).slice(-6); if(keyseq.endsWith(SECRET)){ reveal(); return; } }
+    if(/[0-9]/.test(k)){ if(fresh||cur==='0'){cur=k;fresh=false;} else cur+=k; show(cur); return; }
+    if(k==='.'){ if(!cur.includes('.')){cur+='.';fresh=false;show(cur);} return; }
+    if(k==='C'){ cur='0';prev=null;op=null;fresh=true;show('0'); return; }
+    if(k==='±'){ cur=String(parseFloat(cur)*-1);show(cur); return; }
+    if(k==='%'){ cur=String(parseFloat(cur)/100);show(cur); return; }
+    if(k==='+'||k==='−'||k==='×'||k==='÷'){ if(op&&!fresh){cur=String(calc(prev,cur,op));show(cur);} prev=cur;op=k;fresh=true; return; }
+    if(k==='='){ if(op){cur=String(calc(prev,cur,op));show(cur);op=null;prev=null;fresh=true;} return; }
+  }
+  document.getElementById('calcMask').addEventListener('click',function(e){
+    var b=e.target.closest('.ck'); if(!b)return; press(b.getAttribute('data-k'));
+  });
+})();
+</script>
 <datalist id="customersDatalist"></datalist>
 <div class="toast" id="toast"></div>
 
@@ -894,13 +966,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=72"></script>
-<script src="./app.js?v=72"></script>
-<script src="./assistant.js?v=72"></script>
-<script src="./inventory.js?v=72"></script>
-<script src="./invoice.js?v=72"></script>
-<script src="./raffinage.js?v=72"></script>
-<script src="./auth.js?v=72"></script>
+<script src="./firebase.js?v=73"></script>
+<script src="./app.js?v=73"></script>
+<script src="./assistant.js?v=73"></script>
+<script src="./inventory.js?v=73"></script>
+<script src="./invoice.js?v=73"></script>
+<script src="./raffinage.js?v=73"></script>
+<script src="./auth.js?v=73"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->

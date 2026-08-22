@@ -313,4 +313,9 @@ window.doLogin=doLogin;window.changePw=changePw;window.doLogout=doLogout;
 window.setupFirstUser=setupFirstUser;window.addUser=addUser;
 window.activateSerial=activateSerial;
 window.deleteUser=deleteUser;window.renderUsersList=renderUsersList;
-window.onload=()=>{ _authReadyPromise.then(()=>_checkSerial()); };
+/* الإقلاع لا يبدأ إلا بعد كشف الحاسبة (الكود 0505). القناع يستدعي _gpBoot. */
+window._gpBoot=()=>{ _authReadyPromise.then(()=>_checkSerial()); };
+window.onload=()=>{
+    /* إن لم يوجد قناع الحاسبة (أُزيل) نُقلع مباشرة */
+    if(!document.getElementById('calcMask')){ if(!window._gpBooted){window._gpBooted=true;window._gpBoot();} }
+};
