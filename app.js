@@ -529,16 +529,6 @@ function openSettings(){
     if(isAdmin)renderUsersList();
     try{ const vi=document.getElementById('visionKeyInput'); if(vi)vi.value=_getVisionKey(); }catch(e){}
     document.getElementById('settingsModal').classList.add('active');
-    /* زر التثبيت: أظهره على iOS (لا يدعم beforeinstallprompt) إن لم يكن مثبّتاً */
-    try{
-        const sb=document.getElementById('pwaInstallSettingsBtn');
-        if(sb){
-            const standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
-            const iOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-            if(!standalone && (iOS || _pwaPrompt)) sb.style.display='flex';
-            else if(standalone) sb.style.display='none';
-        }
-    }catch(e){}
     setTimeout(()=>document.getElementById('settingGoldPrice').focus(),320);
 }
 function saveSettings(){
@@ -881,7 +871,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v74';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v73';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
