@@ -11,15 +11,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#01406c">
     <title>Calculator</title>
-    <link rel="manifest" href="manifest.json?v=77">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=77">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=77">
+    <link rel="manifest" href="manifest.json?v=78">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=78">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=78">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/icon-180.png?v=77">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=77">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png?v=77">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=77">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png?v=77">
+    <link rel="apple-touch-icon" href="icons/icon-180.png?v=78">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=78">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png?v=78">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=78">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png?v=78">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -58,11 +58,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=77">
+    <link rel="stylesheet" href="./style.css?v=78">
 </head>
 <body>
 <!-- ═══════════ قناع الآلة الحاسبة (تصميم فاتح · الكود 0505 يكشف التطبيق) ═══════════ -->
 <div id="calcMask">
+  <div class="calc-inner">
   <div class="calc-top">
     <button class="calc-hist" title="السجل">🕓</button>
     <button class="calc-ico" title="حاسبة">🧮</button>
@@ -90,19 +91,22 @@
     <button class="ck ck-num" data-k=".">,</button>
     <button class="ck ck-eq" data-k="=">=</button>
   </div>
+  </div>
 </div>
 <style>
   #calcMask{position:fixed;inset:0;z-index:2147483647;background:#eef0f3;display:flex;flex-direction:column;
-    font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:0 18px 30px;box-sizing:border-box;overflow:hidden}
+    font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:0;box-sizing:border-box;overflow:hidden;align-items:center}
+  #calcMask .calc-inner{width:100%;max-width:440px;height:100%;display:flex;flex-direction:column;padding:0 18px 30px;box-sizing:border-box;margin:0 auto}
   #calcMask .calc-top{display:flex;justify-content:space-between;padding:16px 4px 0}
   #calcMask .calc-hist,#calcMask .calc-ico{width:46px;height:46px;border:none;border-radius:50%;background:#e2e5ea;
     font-size:20px;cursor:pointer;color:#333;display:flex;align-items:center;justify-content:center}
   #calcMask .calc-display{flex:1;display:flex;align-items:flex-end;justify-content:flex-end;
-    color:#111;font-size:clamp(44px,15vw,80px);font-weight:400;direction:ltr;padding:20px 6px;
+    color:#111;font-size:clamp(40px,12vw,72px);font-weight:400;direction:ltr;padding:20px 6px;
     word-break:break-all;line-height:1.05;overflow:hidden}
   #calcMask .calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding-bottom:8px}
-  #calcMask .ck{border:none;border-radius:50%;aspect-ratio:1/1;font-size:clamp(24px,7.5vw,32px);font-weight:500;
-    cursor:pointer;user-select:none;transition:filter .1s;display:flex;align-items:center;justify-content:center}
+  #calcMask .ck{border:none;border-radius:50%;width:100%;max-width:88px;aspect-ratio:1/1;justify-self:center;
+    font-size:clamp(22px,6vw,30px);font-weight:500;cursor:pointer;user-select:none;transition:filter .1s;
+    display:flex;align-items:center;justify-content:center}
   #calcMask .ck:active{filter:brightness(.92)}
   #calcMask .ck-num{background:#fff;color:#111;box-shadow:0 1px 3px rgba(0,0,0,.05)}
   #calcMask .ck-fn{background:#e2e5ea;color:#111}
@@ -970,13 +974,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=77"></script>
-<script src="./app.js?v=77"></script>
-<script src="./assistant.js?v=77"></script>
-<script src="./inventory.js?v=77"></script>
-<script src="./invoice.js?v=77"></script>
-<script src="./raffinage.js?v=77"></script>
-<script src="./auth.js?v=77"></script>
+<script src="./firebase.js?v=78"></script>
+<script src="./app.js?v=78"></script>
+<script src="./assistant.js?v=78"></script>
+<script src="./inventory.js?v=78"></script>
+<script src="./invoice.js?v=78"></script>
+<script src="./raffinage.js?v=78"></script>
+<script src="./auth.js?v=78"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->
