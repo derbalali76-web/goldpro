@@ -871,7 +871,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v76';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v77';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -2103,7 +2103,7 @@ function renderDebts(){
             return Math.abs(b[1].di)-Math.abs(a[1].di);          /* عند التساوي: حسب الدين */
         })
         .map(([n,v])=>`<tr>
-            <td><strong>${n}</strong></td>
+            <td><strong onclick="showCustomerLog('${n.replace(/'/g,"\\'")}')" style="cursor:pointer;color:var(--g600);text-decoration:underline;text-underline-offset:3px">${n}</strong></td>
             <td>${fD(v.di,0,'Da')}</td><td>${fD(v.do,2,'$')}</td>
             <td>${fD(v.g7,2,'غ (730)')}</td><td>${fD(v.g2,2,'غ (24)')}</td>
             <td><button class="btn-settle" onclick="openSettle('${n.replace(/'/g,"\\'")}')">✅ تصفية</button></td>
@@ -3604,42 +3604,17 @@ window.showDubaiMonth=(mKey)=>{
     const wrap=document.getElementById('hdrCenterWrap');
     const ball=document.getElementById('priceBall');
     if(!wrap||!ball)return;
-    /* الموضع: المحفوظ أو افتراضي أعلى الوسط (لا الزاوية) */
-    function applyPos(){
-      let pos=null; try{pos=JSON.parse(localStorage.getItem(_ballKey())||'null');}catch(e){}
-      if(pos&&isFinite(pos.x)&&isFinite(pos.y)){
+    /* الموضع: المحفوظ (حيث ثبّتها المستخدم) أو افتراضي وسط الشاشة — ثابت بلا سحب */
+    let pos=null; try{pos=JSON.parse(localStorage.getItem(_ballKey())||'null');}catch(e){}
+    if(pos&&isFinite(pos.x)&&isFinite(pos.y)){
         wrap.style.left=Math.max(4,Math.min(window.innerWidth-58,pos.x))+'px';
         wrap.style.top =Math.max(4,Math.min(window.innerHeight-58,pos.y))+'px';
         wrap.style.transform='none';
-      }else{
-        wrap.style.left='50%'; wrap.style.top='10px'; wrap.style.transform='translateX(-50%)';
-      }
+    }else{
+        wrap.style.left='50%'; wrap.style.top='50%'; wrap.style.transform='translate(-50%,-50%)';
     }
-    applyPos();
-    window._resetBallPos=()=>{ try{localStorage.removeItem(_ballKey());}catch(e){} applyPos(); };
-
-    let dragging=false,sx,sy,ox,oy,moved=false;
-    const down=(e)=>{ dragging=true;moved=false;window._badgeDragMoved=false;
-      const p=e.touches?e.touches[0]:e; sx=p.clientX;sy=p.clientY;
-      const r=wrap.getBoundingClientRect(); ox=r.left;oy=r.top; };
-    const move=(e)=>{ if(!dragging)return;
-      const p=e.touches?e.touches[0]:e; const dx=p.clientX-sx,dy=p.clientY-sy;
-      if(!moved&&(Math.abs(dx)>6||Math.abs(dy)>6)){moved=true;window._badgeDragMoved=true;}
-      if(moved){
-        wrap.style.left=Math.max(4,Math.min(window.innerWidth-58,ox+dx))+'px';
-        wrap.style.top =Math.max(4,Math.min(window.innerHeight-58,oy+dy))+'px';
-        wrap.style.transform='none';
-        if(e.cancelable)e.preventDefault();
-      } };
-    const up=()=>{ if(!dragging)return;dragging=false;
-      if(moved){ const r=wrap.getBoundingClientRect();
-        try{localStorage.setItem(_ballKey(),JSON.stringify({x:r.left,y:r.top}));}catch(e){}
-        setTimeout(()=>{window._badgeDragMoved=false;},60);
-      } };
-    ball.addEventListener('mousedown',down); ball.addEventListener('touchstart',down,{passive:true});
-    document.addEventListener('mousemove',move); document.addEventListener('touchmove',move,{passive:false});
-    document.addEventListener('mouseup',up); document.addEventListener('touchend',up);
-    window.addEventListener('resize',applyPos);
+    wrap.style.cursor='pointer'; ball.style.cursor='pointer';
+    window._badgeDragMoved=false;   /* لا سحب → النقر يفتح دائماً */
   }
   if(document.readyState!=='loading')_initBall(); else document.addEventListener('DOMContentLoaded',_initBall);
 
@@ -3661,3 +3636,41 @@ window.showDubaiMonth=(mKey)=>{
     if(w&&w.classList.contains('open')&&!w.contains(e.target))w.classList.remove('open');
   },true);
 })();
+
+/* ═══════════ سجلّ الزبون (يُفتح بالنقر على اسمه في دفتر الديون) ═══════════ */
+window.showCustomerLog=(name)=>{
+    if(!name)return;
+    /* كل العمليات المرتبطة بهذا الزبون */
+    const rows=(ops||[]).filter(o=>o&&(o.c===name||o.party===name||o.dollFrom===name||o.xferFrom===name||o.xferTo===name))
+        .slice().sort((a,b)=>(b._ts||0)-(a._ts||0));
+    /* الأرصدة الحالية */
+    const bal={di:0,do:0,g7:0,g2:0};
+    (debts||[]).forEach(d=>{ if(d.c===name){ const k=d.type==='دينار'?'di':d.type==='دولار'?'do':d.type==='ذهب 730'?'g7':'g2'; bal[k]+=(d.a||0); } });
+    const money=(v,d,u)=>{ if(!v||Math.abs(v)<0.001)return''; const c=v>0?'#16a34a':'#dc2626'; return `<span style="color:${c};font-weight:800">${v>0?'+':'−'}${fmt(Math.abs(v),d)} ${u}</span>`; };
+    const balLine=[money(bal.di,0,'دج'),money(bal.do,2,'$'),money(bal.g7,2,'غ730'),money(bal.g2,2,'غ24')].filter(Boolean).join(' · ')||'<span style="color:var(--t3)">لا رصيد</span>';
+    const list=rows.length?rows.map(o=>{
+        const out=o.t==='تسليم'||o.t==='بيع دبي'||o.t==='شحن'||o.t==='مصاريف'||(o.a<0);
+        const unit=o.m==='دينار'?'دج':o.m==='دولار'?'$':'غ';
+        const amt=fmt(Math.abs(o.a||0),(o.m==='دينار'||o.m==='دولار')?0:2);
+        return `<div style="padding:.5rem .2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:.5rem">
+            <div style="text-align:right;min-width:0">
+                <div style="font-weight:800;font-size:.8rem">${o.t||'عملية'} ${o.m?('· '+o.m):''}</div>
+                <div style="font-size:.66rem;color:var(--t3)">${o.dt||''}</div>
+            </div>
+            <div style="font-weight:900;font-size:.82rem;white-space:nowrap;color:${out?'var(--rd)':'var(--gr)'}">${out?'−':'+'}${amt} ${unit}</div>
+        </div>`;
+    }).join(''):'<div style="text-align:center;padding:2rem;color:var(--t3)">لا عمليات مسجّلة</div>';
+    let m=document.getElementById('custLogModal');
+    if(!m){m=document.createElement('div');m.id='custLogModal';m.className='modal-overlay';document.body.appendChild(m);}
+    m.innerHTML=`<div class="modal-box" style="max-width:460px">
+        <div class="modal-header"><h3 style="font-size:.95rem">📋 سجلّ: ${name}</h3><button class="close-btn" onclick="closeModal('custLogModal')">✕</button></div>
+        <div style="padding:.9rem">
+            <div class="infobox" style="margin-bottom:.6rem;font-size:.8rem;text-align:center">الرصيد الحالي: ${balLine}</div>
+            <div style="font-size:.7rem;color:var(--t3);margin-bottom:.4rem">${rows.length} عملية · الأحدث أولاً</div>
+            <div style="max-height:56vh;overflow-y:auto">${list}</div>
+            <div style="display:flex;gap:.5rem;margin-top:.7rem">
+                <button class="btn-settle" style="flex:1" onclick="closeModal('custLogModal');openSettle('${name.replace(/'/g,"\\'")}')">✅ تصفية</button>
+            </div>
+        </div></div>`;
+    m.classList.add('active');
+};
