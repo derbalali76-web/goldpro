@@ -871,7 +871,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v73';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v76';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -3594,4 +3594,70 @@ window.showDubaiMonth=(mKey)=>{
         const open=[...document.querySelectorAll('.modal-overlay.active')].pop();
         if(open&&open.id!=='loginOverlay'&&open.id!=='serialOverlay')_close(open);
     });
+})();
+
+/* ═══════════ كرة السعر: التوغّل + السحب + الموضع (كانت الدوال مفقودة) ═══════════ */
+(function(){
+  window._badgeDragMoved=false;
+  function _ballKey(){ return 'gp_ballpos_'+(window._currentUser||''); }
+  function _initBall(){
+    const wrap=document.getElementById('hdrCenterWrap');
+    const ball=document.getElementById('priceBall');
+    if(!wrap||!ball)return;
+    /* الموضع: المحفوظ أو افتراضي أعلى الوسط (لا الزاوية) */
+    function applyPos(){
+      let pos=null; try{pos=JSON.parse(localStorage.getItem(_ballKey())||'null');}catch(e){}
+      if(pos&&isFinite(pos.x)&&isFinite(pos.y)){
+        wrap.style.left=Math.max(4,Math.min(window.innerWidth-58,pos.x))+'px';
+        wrap.style.top =Math.max(4,Math.min(window.innerHeight-58,pos.y))+'px';
+        wrap.style.transform='none';
+      }else{
+        wrap.style.left='50%'; wrap.style.top='10px'; wrap.style.transform='translateX(-50%)';
+      }
+    }
+    applyPos();
+    window._resetBallPos=()=>{ try{localStorage.removeItem(_ballKey());}catch(e){} applyPos(); };
+
+    let dragging=false,sx,sy,ox,oy,moved=false;
+    const down=(e)=>{ dragging=true;moved=false;window._badgeDragMoved=false;
+      const p=e.touches?e.touches[0]:e; sx=p.clientX;sy=p.clientY;
+      const r=wrap.getBoundingClientRect(); ox=r.left;oy=r.top; };
+    const move=(e)=>{ if(!dragging)return;
+      const p=e.touches?e.touches[0]:e; const dx=p.clientX-sx,dy=p.clientY-sy;
+      if(!moved&&(Math.abs(dx)>6||Math.abs(dy)>6)){moved=true;window._badgeDragMoved=true;}
+      if(moved){
+        wrap.style.left=Math.max(4,Math.min(window.innerWidth-58,ox+dx))+'px';
+        wrap.style.top =Math.max(4,Math.min(window.innerHeight-58,oy+dy))+'px';
+        wrap.style.transform='none';
+        if(e.cancelable)e.preventDefault();
+      } };
+    const up=()=>{ if(!dragging)return;dragging=false;
+      if(moved){ const r=wrap.getBoundingClientRect();
+        try{localStorage.setItem(_ballKey(),JSON.stringify({x:r.left,y:r.top}));}catch(e){}
+        setTimeout(()=>{window._badgeDragMoved=false;},60);
+      } };
+    ball.addEventListener('mousedown',down); ball.addEventListener('touchstart',down,{passive:true});
+    document.addEventListener('mousemove',move); document.addEventListener('touchmove',move,{passive:false});
+    document.addEventListener('mouseup',up); document.addEventListener('touchend',up);
+    window.addEventListener('resize',applyPos);
+  }
+  if(document.readyState!=='loading')_initBall(); else document.addEventListener('DOMContentLoaded',_initBall);
+
+  /* فتح/إغلاق فقاعة السعر (تحوي حاسبة دبي) مع كشف اتّجاه الظهور */
+  window._togglePricePop=function(){
+    const w=document.getElementById('hdrCenterWrap'); if(!w)return;
+    w.classList.toggle('open');
+    if(w.classList.contains('open')){
+      w.classList.remove('pop-left','pop-right','pop-up');
+      const r=w.getBoundingClientRect();
+      if(r.left<140)w.classList.add('pop-right');
+      else if(window.innerWidth-r.right<140)w.classList.add('pop-left');
+      if(r.top>window.innerHeight*0.55)w.classList.add('pop-up');
+    }
+  };
+  /* لمسة خارج الفقاعة تغلقها */
+  document.addEventListener('pointerdown',(e)=>{
+    const w=document.getElementById('hdrCenterWrap');
+    if(w&&w.classList.contains('open')&&!w.contains(e.target))w.classList.remove('open');
+  },true);
 })();
