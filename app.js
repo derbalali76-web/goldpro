@@ -871,7 +871,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v79';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v81';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1078,6 +1078,7 @@ window.editDubInv=(id)=>{
     document.getElementById('dubaiWeight').value=d.w!=null?d.w:'';
     document.getElementById('dubaiPrice').value=d.sp!=null?d.sp:'';
     document.getElementById('dubaiDisc').value=d.disc!=null?d.disc:'0';
+    try{const _rf=document.getElementById('dubaiRate'); if(_rf)_rf.value=(d.rate!=null?d.rate:'');}catch(e){}
     try{document.getElementById('dubaiWeight').dispatchEvent(new Event('input'));}catch(e){}
     window._editRestore={modalId:'dubaiModal',snap};
     toast('✏️ عدّل ثم احفظ','info');
@@ -1263,6 +1264,7 @@ window.saveExp=()=>{
 
 /* ═══════════ DUBAI ═══════════ */
 window.openDubai=()=>{
+    try{ const _rf=document.getElementById('dubaiRate'); if(_rf&&!_rf.value){ const _lr=(dollInvoices.find(x=>x&&x.isBuy===false&&Number(x.r)>0)||{}).r||dollarSellRate||dollarRate; if(_lr)_rf.value=_lr; } }catch(e){}
     document.getElementById('dubaiOffice').value='';document.getElementById('dubaiWeight').value='';
     /* تعبئة سعر الشاشة اللحظي تلقائياً */
     document.getElementById('dubaiPrice').value=liveSpotPrice>0?liveSpotPrice:'';
@@ -1681,8 +1683,9 @@ window.saveDubai=()=>{
     const did='DUB-'+uid();
     const dt=new Date().toLocaleDateString('fr-FR');
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    /* سعر الصرف = آخر «بيع دولار» (لا الشراء) — dollInvoices الأحدث أولاً */
-    const _sellRate=(dollInvoices.find(x=>x&&x.isBuy===false&&Number(x.r)>0)||{}).r||dollarRate;
+    /* سعر الصرف: من الحقل إن مُلئ يدوياً، وإلا آخر «بيع دولار» */
+    const _rateFld=parseFloat(String((document.getElementById('dubaiRate')||{}).value||'').replace(/\s/g,'').replace(',','.'));
+    const _sellRate=(isFinite(_rateFld)&&_rateFld>0)?_rateFld:((dollInvoices.find(x=>x&&x.isBuy===false&&Number(x.r)>0)||{}).r||dollarRate);
     const _dub={id:did,c:o,w,sp,disc,usd,dt,rate:_sellRate};
     emitEvent('DUBAI',
         {o,w,sp,disc,usd,rate:_sellRate,fromDebt,fromInv,barsRemove,barUpdates},
@@ -3459,15 +3462,30 @@ window._dubPGLine=(d)=>{
 window.editDubaiRate=(id)=>{
     const d=dubaiInvoices.find(x=>x.id===id); if(!d){toast('الفاتورة غير موجودة','error');return;}
     const cur=Number(d.rate)||dollarSellRate||dollarRate||0;
+    const before=(function(){try{const r=_dubaiPerGram(d);return r&&isFinite(r.pr)?r.pr:0;}catch(e){return 0;}})();
     const v=prompt(`سعر صرف الدولار لهذه الفاتورة\n${d.o||d.c||''} · ${d.dt||''}\nالحالي: ${fmt(cur,0)} دج/$\n\nأدخل السعر الجديد:`, String(cur));
     if(v===null)return;
     const nr=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));
     if(!isFinite(nr)||nr<=0){toast('سعر غير صالح','error');return;}
-    /* حدث تصحيح رجعي (يُطبَّق في المُسقِط على inv.rate) */
+    /* ① عدّل الحدث المصدر مباشرة (يضمن الثبات عبر إعادة البناء والمزامنة) */
+    try{
+        (typeof _allEvents!=="undefined"?_allEvents:[]).forEach(e=>{
+            const inv=e&&e.display&&e.display.dubaiInvoice;
+            if(inv&&inv.id===id){ inv.rate=nr; if(e.data)e.data.rate=nr; }
+            if(e&&e.display&&e.display.op&&e.display.op.did===id)e.display.op.rate=nr;
+        });
+    }catch(e){}
+    /* ② سجّل حدث تصحيح للأثر + المزامنة */
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     emitEvent('DUBAI_RATE_FIX',{did:id,rate:nr},{op:{c:d.o||d.c,t:'تعديل صرف دبي',m:'دولار',a:0,_ts:Date.now(),dt:nowStr,dr:nr,prevRate:cur}});
-    toast('💱 عُدّل سعر الصرف — أُعيد حساب سعر الغرام','info');
+    /* ③ أعد البناء والعرض */
+    try{ if(typeof _reproject==='function')_reproject(); }catch(e){}
+    try{ if(typeof _lsSaveEvents==='function')_lsSaveEvents(); }catch(e){}
     try{ renderArchive(); updAll(); }catch(e){}
+    /* ④ أظهر التغيّر بعينه */
+    const d2=dubaiInvoices.find(x=>x.id===id)||d;
+    const after=(function(){try{const r=_dubaiPerGram(d2);return r&&isFinite(r.pr)?r.pr:0;}catch(e){return 0;}})();
+    toast(`💱 الصرف: ${fmt(cur,0)}→${fmt(nr,0)} · الغرام: ${fmt(before,0)}→${fmt(after,0)}`,'info');
 };
 
 /* ── الفائدة الشهرية بالميزان المتطابق ── */
