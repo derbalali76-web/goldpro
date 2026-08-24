@@ -871,7 +871,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v78';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v79';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -3450,8 +3450,24 @@ window._dubPGLine=(d)=>{
     try{
         if(!(_usersCache&&_usersCache[_currentUser]&&_usersCache[_currentUser].isAdmin))return '';
         const r=_dubaiPerGram(d); if(!r||!isFinite(r.pr))return '';
-        return `<small style="display:block;color:#0f766e;font-weight:800">⚖️ سعر الغرام: ${fmt(r.pr,0)} دج <span style="color:var(--t3);font-weight:600">· صرف ${fmt(r.rate,0)}${r.stored?'':' ⚠️احتياطي'}</span>${r.noShip?' <span style="color:var(--t3)">(بلا شحن)</span>':''}</small>`;
+        const rateBtn=`<span onclick="event.stopPropagation();editDubaiRate('${d.id}')" style="color:var(--g600);font-weight:800;text-decoration:underline;text-underline-offset:2px;cursor:pointer">صرف ${fmt(r.rate,0)}${r.stored?'':' ⚠️'} ✏️</span>`;
+        return `<small style="display:block;color:#0f766e;font-weight:800">⚖️ سعر الغرام: ${fmt(r.pr,0)} دج <span style="color:var(--t3);font-weight:600">· ${rateBtn}</span>${r.noShip?' <span style="color:var(--t3)">(بلا شحن)</span>':''}</small>`;
     }catch(e){return '';}
+};
+
+/* تعديل سعر الصرف لفاتورة دبي (بالنقر عليه في الأرشيف) */
+window.editDubaiRate=(id)=>{
+    const d=dubaiInvoices.find(x=>x.id===id); if(!d){toast('الفاتورة غير موجودة','error');return;}
+    const cur=Number(d.rate)||dollarSellRate||dollarRate||0;
+    const v=prompt(`سعر صرف الدولار لهذه الفاتورة\n${d.o||d.c||''} · ${d.dt||''}\nالحالي: ${fmt(cur,0)} دج/$\n\nأدخل السعر الجديد:`, String(cur));
+    if(v===null)return;
+    const nr=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));
+    if(!isFinite(nr)||nr<=0){toast('سعر غير صالح','error');return;}
+    /* حدث تصحيح رجعي (يُطبَّق في المُسقِط على inv.rate) */
+    const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    emitEvent('DUBAI_RATE_FIX',{did:id,rate:nr},{op:{c:d.o||d.c,t:'تعديل صرف دبي',m:'دولار',a:0,_ts:Date.now(),dt:nowStr,dr:nr,prevRate:cur}});
+    toast('💱 عُدّل سعر الصرف — أُعيد حساب سعر الغرام','info');
+    try{ renderArchive(); updAll(); }catch(e){}
 };
 
 /* ── الفائدة الشهرية بالميزان المتطابق ── */
