@@ -871,7 +871,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v81';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v82';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -3671,40 +3671,29 @@ window.showDubaiMonth=(mKey)=>{
   },true);
 })();
 
-/* ═══════════ سجلّ الزبون (يُفتح بالنقر على اسمه في دفتر الديون) ═══════════ */
+/* ═══════════ سجلّ الزبون (يُفتح بالنقر على اسمه) — بنفس تنسيق السجلّ المُرسَل ═══════════ */
 window.showCustomerLog=(name)=>{
     if(!name)return;
-    /* كل العمليات المرتبطة بهذا الزبون */
-    const rows=(ops||[]).filter(o=>o&&(o.c===name||o.party===name||o.dollFrom===name||o.xferFrom===name||o.xferTo===name))
-        .slice().sort((a,b)=>(b._ts||0)-(a._ts||0));
-    /* الأرصدة الحالية */
-    const bal={di:0,do:0,g7:0,g2:0};
-    (debts||[]).forEach(d=>{ if(d.c===name){ const k=d.type==='دينار'?'di':d.type==='دولار'?'do':d.type==='ذهب 730'?'g7':'g2'; bal[k]+=(d.a||0); } });
-    const money=(v,d,u)=>{ if(!v||Math.abs(v)<0.001)return''; const c=v>0?'#16a34a':'#dc2626'; return `<span style="color:${c};font-weight:800">${v>0?'+':'−'}${fmt(Math.abs(v),d)} ${u}</span>`; };
-    const balLine=[money(bal.di,0,'دج'),money(bal.do,2,'$'),money(bal.g7,2,'غ730'),money(bal.g2,2,'غ24')].filter(Boolean).join(' · ')||'<span style="color:var(--t3)">لا رصيد</span>';
-    const list=rows.length?rows.map(o=>{
-        const out=o.t==='تسليم'||o.t==='بيع دبي'||o.t==='شحن'||o.t==='مصاريف'||(o.a<0);
-        const unit=o.m==='دينار'?'دج':o.m==='دولار'?'$':'غ';
-        const amt=fmt(Math.abs(o.a||0),(o.m==='دينار'||o.m==='دولار')?0:2);
-        return `<div style="padding:.5rem .2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:.5rem">
-            <div style="text-align:right;min-width:0">
-                <div style="font-weight:800;font-size:.8rem">${o.t||'عملية'} ${o.m?('· '+o.m):''}</div>
-                <div style="font-size:.66rem;color:var(--t3)">${o.dt||''}</div>
-            </div>
-            <div style="font-weight:900;font-size:.82rem;white-space:nowrap;color:${out?'var(--rd)':'var(--gr)'}">${out?'−':'+'}${amt} ${unit}</div>
-        </div>`;
-    }).join(''):'<div style="text-align:center;padding:2rem;color:var(--t3)">لا عمليات مسجّلة</div>';
+    const custOps=ops.filter(o=>(o.c||'').toLowerCase()===name.toLowerCase()&&o.t!=='شحن');
+    let html='';
+    try{ html=buildCustomerLogHtml(name,custOps); }catch(e){ html=''; }
+    if(!html){ toast('لا توجد معاملات لهذا الزبون','info'); return; }
     let m=document.getElementById('custLogModal');
-    if(!m){m=document.createElement('div');m.id='custLogModal';m.className='modal-overlay';document.body.appendChild(m);}
-    m.innerHTML=`<div class="modal-box" style="max-width:460px">
-        <div class="modal-header"><h3 style="font-size:.95rem">📋 سجلّ: ${name}</h3><button class="close-btn" onclick="closeModal('custLogModal')">✕</button></div>
-        <div style="padding:.9rem">
-            <div class="infobox" style="margin-bottom:.6rem;font-size:.8rem;text-align:center">الرصيد الحالي: ${balLine}</div>
-            <div style="font-size:.7rem;color:var(--t3);margin-bottom:.4rem">${rows.length} عملية · الأحدث أولاً</div>
-            <div style="max-height:56vh;overflow-y:auto">${list}</div>
-            <div style="display:flex;gap:.5rem;margin-top:.7rem">
-                <button class="btn-settle" style="flex:1" onclick="closeModal('custLogModal');openSettle('${name.replace(/'/g,"\\'")}')">✅ تصفية</button>
-            </div>
-        </div></div>`;
-    m.classList.add('active');
+    if(!m){m=document.createElement('div');m.id='custLogModal';
+        m.style.cssText='position:fixed;inset:0;background:#fff;z-index:99999;overflow:auto;display:none';
+        document.body.appendChild(m);}
+    m.innerHTML=`<button onclick="document.getElementById('custLogModal').style.display='none'"
+        style="position:fixed;top:10px;left:10px;z-index:100000;width:42px;height:42px;border-radius:50%;border:none;background:#111;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
+        <button onclick="_shareCustLog('${name.replace(/'/g,"\\'")}')"
+        style="position:fixed;top:10px;left:60px;z-index:100000;height:42px;padding:0 16px;border-radius:22px;border:none;background:#16a34a;color:#fff;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif">📤 إرسال</button>
+        <div style="max-width:820px;margin:0 auto;padding:56px 12px 20px">${html}</div>`;
+    m.style.display='block';
+};
+/* إرسال نفس السجلّ (يعيد استخدام مسار الإرسال الموجود) */
+window._shareCustLog=(name)=>{
+    try{
+        const sel=document.getElementById('sendLogCustomer');
+        if(sel){ sel.value=name; if(typeof sendCustomerLogWA==='function'){ sendCustomerLogWA(); return; } if(typeof sendCustomerLog==='function'){ sendCustomerLog(); return; } }
+    }catch(e){}
+    toast('استعمل قسم «إرسال السجلّ» من القائمة','info');
 };
