@@ -303,6 +303,12 @@ function _applyEvt(st,evt){
             (d.debtRows||[]).forEach(r=>{
                 const sign=r.dir==='لنا'?1:-1;
                 stUpdDebt(r.c,r.type,sign*r.amt);
+                /* سطر في سجلّ الزبون: يظهر رصيده الافتتاحي */
+                st.ops.push({
+                    c:r.c, t:'رصيد افتتاحي', m:r.type, a:sign*r.amt,
+                    _ts:(disp.op&&disp.op._ts)||evt.ts||Date.now(),
+                    dt:(disp.op&&disp.op.dt)||'', opening:true, id:evt.id+'_'+r.c
+                });
             });
             break;
         }
@@ -510,6 +516,13 @@ function _applyEvt(st,evt){
                 xferFrom: d.from, xferInType: d.dstType,
                 id: evt.id+'_in'
             });
+            break;
+        }
+
+        case 'DUBAI_RATE_FIX':{
+            /* تعديل سعر صرف فاتورة دبي رجعياً */
+            const inv=st.dubaiInvoices.find(x=>x.id===d.did);
+            if(inv&&Number(d.rate)>0)inv.rate=Number(d.rate);
             break;
         }
 
