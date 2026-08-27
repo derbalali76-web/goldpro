@@ -560,12 +560,7 @@ window._add730BarRow=(w,k)=>{
 };
 
 window.openLiqEdit=()=>{
-    /* السماح بإعادة الإدخال إذا كانت جميع الأرصدة صفراً (استعادة بعد فقدان بيانات) */
-    const allZero=B.دينار===0&&B.دولار===0&&g730.length===0&&g24.length===0;
-    if(localStorage.getItem(_liqKey())&&!allZero){
-        toast('⚠️ تم اعتماد الأرصدة الافتتاحية مسبقاً — لا يمكن التكرار إلا عند صفر الرصيد','error');
-        return;
-    }
+    /* إدخال الأرصدة الافتتاحية متاح دائماً (بطلب المستخدم) */
     /* تصفير الحقول */
     ['liqDinar','liqDollar','liqG24'].forEach(id=>{
         const el=document.getElementById(id);if(el)el.value='';
@@ -626,10 +621,7 @@ window._addLiqDebtRow=()=>{
 };
 
 window.confirmLiqEdit=()=>{
-    const allZero=B.دينار===0&&B.دولار===0&&g730.length===0&&g24.length===0;
-    if(localStorage.getItem(_liqKey())&&!allZero){
-        toast('⚠️ تم اعتماد الأرصدة مسبقاً','error');return;
-    }
+    /* متاح دائماً — لا منع للتكرار */
     const dinar  = readNum('liqDinar');
     const dollar = readNum('liqDollar');
     /* جمع سبائك 730 المتعددة (وزن + عيار لكل سبيكة) */
@@ -667,7 +659,7 @@ window.confirmLiqEdit=()=>{
         ));
     }
     if(!sumLines.length) return toast('أدخل رصيداً أو ديناً واحداً على الأقل','error');
-    if(!confirm(`سيتم اعتماد الأرصدة الافتتاحية التالية:\n\n${sumLines.join('\n')}\n\nهذه العملية لا يمكن تكرارها. هل أنت متأكد؟`))return;
+    if(!confirm(`سيتم اعتماد الأرصدة الافتتاحية التالية:\n\n${sumLines.join('\n')}\n\nهل أنت متأكد؟`))return;
 
     const dt=new Date().toLocaleDateString('fr-FR');
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -687,10 +679,7 @@ window.confirmLiqEdit=()=>{
         }
     );
 
-    try{localStorage.setItem(_liqKey(),'1');}catch(e){}
-    ['liqEditBtn','liqSettingsBtn'].forEach(id=>{
-        const el=document.getElementById(id);if(el)el.style.display='none';
-    });
+    /* تبقى الأزرار متاحة دائماً */
     closeModal('liqModal');
     toast(`✅ تم اعتماد الأرصدة الافتتاحية${debtRows.length?' مع '+debtRows.length+' دين':''}`);
 };
@@ -871,7 +860,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v82';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v83';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';

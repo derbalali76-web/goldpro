@@ -11,15 +11,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#01406c">
     <title>Calculator</title>
-    <link rel="manifest" href="manifest.json?v=82">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=82">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=82">
+    <link rel="manifest" href="manifest.json?v=83">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=83">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=83">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/icon-180.png?v=82">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=82">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png?v=82">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=82">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png?v=82">
+    <link rel="apple-touch-icon" href="icons/icon-180.png?v=83">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=83">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png?v=83">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=83">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png?v=83">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -58,7 +58,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=82">
+    <link rel="stylesheet" href="./style.css?v=83">
 </head>
 <body>
 <!-- ═══════════ قناع الآلة الحاسبة (تصميم فاتح · الكود 0505 يكشف التطبيق) ═══════════ -->
@@ -206,7 +206,7 @@
                     <div class="ci" style="color:var(--bl)"><i class="fas fa-wallet"></i></div>
                     <span class="cl">السيولة</span>
                     <span class="cv" id="dinarBal">0<small> DZD</small></span>
-                    <button id="liqEditBtn" onclick="openLiqEdit()" title="تعديل رصيد السيولة (مرة واحدة فقط)"
+                    <button id="liqEditBtn" onclick="openLiqEdit()" title="تعديل الأرصدة الافتتاحية"
                         style="position:absolute;top:.35rem;left:.35rem;width:22px;height:22px;border-radius:6px;
                         border:1px solid var(--bl);background:rgba(59,130,246,.12);color:var(--bl);
                         font-size:.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
@@ -837,13 +837,13 @@
     </div>
 </div></div>
 
-<!-- الأرصدة الافتتاحية (مرة واحدة فقط) -->
+<!-- الأرصدة الافتتاحية (الأرصدة الافتتاحية) -->
 <div class="modal-overlay" id="liqModal">
 <div class="modal" style="max-width:520px;padding:1rem 1rem 1.2rem">
     <div class="modal-handle"></div>
     <h3 style="margin-bottom:.6rem">🏦 الأرصدة الافتتاحية</h3>
     <div class="infobox" style="margin-bottom:.8rem;font-size:.72rem;color:var(--t2);line-height:1.5">
-        ⚠️ هذه العملية مرة واحدة فقط — أدخل السيولة والمخزون وديون الزبائن القديمة ثم اضغط اعتماد.
+        ℹ️ أدخل السيولة والمخزون وديون الزبائن ثم اضغط اعتماد — متاح في أي وقت.
     </div>
 
     <!-- ═══ قسم 1: السيولة والمخزون ═══ -->
@@ -975,13 +975,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=82"></script>
-<script src="./app.js?v=82"></script>
-<script src="./assistant.js?v=82"></script>
-<script src="./inventory.js?v=82"></script>
-<script src="./invoice.js?v=82"></script>
-<script src="./raffinage.js?v=82"></script>
-<script src="./auth.js?v=82"></script>
+<script src="./firebase.js?v=83"></script>
+<script src="./app.js?v=83"></script>
+<script src="./assistant.js?v=83"></script>
+<script src="./inventory.js?v=83"></script>
+<script src="./invoice.js?v=83"></script>
+<script src="./raffinage.js?v=83"></script>
+<script src="./auth.js?v=83"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->
