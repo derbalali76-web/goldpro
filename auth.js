@@ -28,7 +28,8 @@ async function _fbSignInEmail(uname,pw,allowCreate){
 }
 
 async function _fbCreateAuthUser(uname,pw){
-    try{await firebase.auth().createUserWithEmailAndPassword(uname+_FB_DOMAIN,_fbPw(pw));}catch(e){}
+    try{ await firebase.auth().createUserWithEmailAndPassword(uname+_FB_DOMAIN,_fbPw(pw)); return {ok:true}; }
+    catch(e){ return {ok:false,code:(e&&e.code)||'error'}; }
 }
 
 async function _hashPw(pw){
@@ -130,13 +131,20 @@ async function setupFirstUser(){
     if(pw.length<4)return toast('كلمة المرور قصيرة (4 أحرف على الأقل)','error');
     if(pw!==pw2)return toast('كلمتا المرور لا تتطابقان','error');
     await _saveUser(uname,true);
-    _fbCreateAuthUser(uname,pw);
+    const _r=await _fbCreateAuthUser(uname,pw);
+    if(!_r.ok && _r.code==='auth/email-already-in-use'){
+        /* الحساب موجود مسبقاً في المصادقة — تحقّق أن كلمة المرور تطابقه */
+        const _match=await _fbSignInEmail(uname,pw,false);
+        if(!_match){ return toast('⚠️ هذا الاسم مستخدم بكلمة مرور مختلفة — اختر اسماً آخر أو كلمة المرور الصحيحة','error'); }
+    } else if(!_r.ok){
+        return toast('تعذّر إنشاء الحساب: '+_r.code,'error');
+    }
     document.getElementById('loginSetupPanel').style.display='none';
     document.getElementById('loginMainPanel').style.display='block';
     document.getElementById('loginUser').value=uname;
     document.getElementById('loginPw').value=pw;
     toast('✅ تم إنشاء الحساب — سيتم الدخول تلقائياً','success');
-    setTimeout(doLogin,600);
+    setTimeout(doLogin,300);
 }
 
 function doLogout(){
@@ -184,9 +192,15 @@ async function addUser(){
     if(pw.length<4)return toast('كلمة المرور قصيرة','error');
     if(_usersCache[uname])return toast('⚠️ المستخدم موجود مسبقاً','error');
     await _saveUser(uname,false);
-    _fbCreateAuthUser(uname,pw);
+    const _r=await _fbCreateAuthUser(uname,pw);
+    /* createUser يبدّل جلسة المصادقة للمستخدم الجديد → أعِد جلسة الأدمين الحالي */
+    try{ if(_currentUser&&_encKey&&typeof _fbSignInEmail==='function') await _fbSignInEmail(_currentUser,_encKey,false); }catch(e){}
+    if(!_r.ok && _r.code!=='auth/email-already-in-use'){
+        toast('⚠️ حُفظ المستخدم لكن تعذّر إنشاء حساب الدخول: '+_r.code,'error');
+    }else{
+        toast('✅ تم إنشاء المستخدم: '+uname+' — يدخل بكلمة مروره','success');
+    }
     document.getElementById('newUserName').value='';document.getElementById('newUserPw').value='';
-    toast('✅ تم إنشاء المستخدم: '+uname,'success');
     renderUsersList();
 }
 
