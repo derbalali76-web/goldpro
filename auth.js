@@ -70,7 +70,7 @@ function _afterLogin(){
     restoreDraft();calcRaf();
     setInterval(save,30000);
     _startAutoBackup();
-    fetchSpotPrice();setInterval(fetchSpotPrice,30*1000);
+    fetchSpotPrice();setInterval(fetchSpotPrice,5*1000);
     /* إن فُتح ملف .gpdf قبل توفّر مفتاح المستخدم، عالجه الآن */
     try{ if(typeof _processPendingGpdf==='function') setTimeout(_processPendingGpdf,400); }catch(e){}
 }

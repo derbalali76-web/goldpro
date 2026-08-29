@@ -860,7 +860,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v86';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v88';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1585,6 +1585,8 @@ function _restoreDubaiCalcInputs(){
     }catch(e){return false;}
 }
 window.openDubaiCalc=()=>{
+    /* اجلب سعر البورصة اللحظي فوراً عند الفتح */
+    try{ if(typeof fetchSpotPrice==='function')fetchSpotPrice(); }catch(e){}
     /* استعادة القيم المحفوظة */
     const hadSaved=_restoreDubaiCalcInputs();
     /* إذا لم تكن قيمة للدولار محفوظة، نأخذها من الإعدادات */
@@ -3271,9 +3273,20 @@ async function fetchSpotPrice(){
         const price=d?.price??d?.gold??d?.[0]?.gold;
         if(price&&!isNaN(price)){liveSpotPrice=price;show(price);autoCalcDubai();return}
     }catch{}
-    /* 3. فشل كلا المصدرين */
-    el.textContent='السعر غير متاح';
-    badge.classList.add('spot-loading');
+    /* 3. gold-api بمسار مانع للتخزين — احتياطي ثانٍ */
+    try{
+        const r=await fetch('https://api.gold-api.com/price/XAU?t='+Date.now(),{cache:'no-store'});
+        if(r.ok){ const d=await r.json(); const price=d?.price;
+            if(price&&!isNaN(price)){liveSpotPrice=price;show(price);autoCalcDubai();return} }
+    }catch{}
+    /* 4. فشل كل المصادر — أبقِ آخر سعر معروف بدل «غير متاح» */
+    if(liveSpotPrice>0){
+        el.textContent='XAU '+fmt2(liveSpotPrice)+' $ (آخر سعر)';
+        badge.classList.remove('spot-loading');
+    }else{
+        el.textContent='السعر غير متاح';
+        badge.classList.add('spot-loading');
+    }
 }
 
 
