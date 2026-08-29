@@ -155,17 +155,12 @@ window.saveSimpleRaf=()=>{
                 if(Math.abs(bar.w-r.w)<0.005)takeFull(bar);else takePart(bar,r.w);
             }
         });
-        /* ③ الفائض غير المطابق (صفوف بلا سبيكة) يُقتطع بالترتيب */
-        const _consume=list=>{
-            for(let i=0;i<list.length && rem>0.001;i++){
-                const bar=list[i];
-                if(used.has(bar.id))continue;
-                if(bar.w<=rem+0.001)takeFull(bar);
-                else{takePart(bar,rem);}
-            }
-        };
-        if(rem>0.001)_consume(g730.filter(b=>_rafSentIds.has(b.id)));
-        if(rem>0.001)_consume(g730.filter(b=>!_rafSentIds.has(b.id)));
+        /* ③ حارس صارم: كل صفّ يجب أن يطابق سبيكة فعلية بعيارها ووزنها في المخزون */
+        const _unmatched=rows.filter(r=>!r._done);
+        if(_unmatched.length){
+            const _list=_unmatched.map(r=>`${fmt(r.w,2)}غ عيار ${Math.round(r.k||730)}`).join(' · ');
+            return toast(`🚫 سبيكة غير موجودة في المخزون: ${_list} — لا يمكن الحفظ. أدخل سبيكة موجودة بعيارها ووزنها.`,'error');
+        }
     }
     const barsAdd24=[];
     const dispBars={};
