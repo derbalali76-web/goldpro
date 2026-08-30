@@ -110,9 +110,11 @@
         .hdr-center-wrap{
             position:fixed;
             display:flex;flex-direction:column;align-items:center;gap:.1rem;
-            cursor:grab;user-select:none;z-index:200;
+            cursor:grab;user-select:none;z-index:40;
             touch-action:none;
+            pointer-events:none;              /* الإطار لا يبتلع النقرات */
         }
+        .hdr-center-wrap>*{pointer-events:auto} /* الكرة والفقاعة فقط تستقبلان النقر */
         .hdr-center-wrap:active{cursor:grabbing}
         .hdr-center-inner{display:flex;align-items:center;gap:.4rem;
             background:var(--card);padding:.3rem .55rem;border-radius:2rem;

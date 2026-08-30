@@ -1,5 +1,5 @@
 /* sw.js — Network-First مع Cache offline */
-const CACHE = 'goldpro-v90';
+const CACHE = 'goldpro-v91';
 const ASSETS = [
   './',
   './index.html',
