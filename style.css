@@ -62,7 +62,7 @@
             border-bottom:1px solid var(--border);
             display:flex;align-items:center;justify-content:space-between;
             position:relative;
-            flex-shrink:0;z-index:20;gap:.5rem;box-shadow:var(--sh);
+            flex-shrink:0;z-index:60;gap:.5rem;box-shadow:var(--sh);
         }
         .brand{display:flex;align-items:center;gap:.55rem}
         .logo{
@@ -109,6 +109,7 @@
         /* ─── Draggable header center (حركة حرة) ─── */
         .hdr-center-wrap{
             position:fixed;
+            top:50%;left:50%;transform:translate(-50%,-50%);   /* افتراضي: وسط الشاشة لا الأعلى */
             display:flex;flex-direction:column;align-items:center;gap:.1rem;
             cursor:grab;user-select:none;z-index:40;
             touch-action:none;
