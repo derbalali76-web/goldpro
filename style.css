@@ -39,6 +39,12 @@
         input::placeholder,textarea::placeholder{
             font-family:Tajawal,"Noto Kufi Arabic","Noto Naskh Arabic",Arial,sans-serif;
         }
+        /* iPhone: منع تكبير الصفحة تلقائياً عند التركيز على الحقول (يتطلّب خطّاً ≥16px) */
+        @supports (-webkit-touch-callout: none){
+            input,textarea,select{font-size:16px}
+        }
+        /* منع السحب المطّاطي الزائد على iOS */
+        html,body{overscroll-behavior:none;-webkit-overflow-scrolling:touch}
         ::-webkit-scrollbar{width:4px}
         ::-webkit-scrollbar-track{background:transparent}
         ::-webkit-scrollbar-thumb{background:var(--g400);border-radius:10px}
@@ -49,6 +55,9 @@
         /* ─── Header ─── */
         .hdr{
             background:var(--card);padding:.55rem 1rem;
+            padding-top:calc(.55rem + env(safe-area-inset-top));
+            padding-left:calc(1rem + env(safe-area-inset-left));
+            padding-right:calc(1rem + env(safe-area-inset-right));
             border-bottom:1px solid var(--border);
             display:flex;align-items:center;justify-content:space-between;
             position:relative;
@@ -471,6 +480,8 @@
             box-shadow:0 -4px 28px rgba(0,0,0,.35),0 -1px 0 rgba(245,158,11,.15);
             display:flex;justify-content:space-around;
             padding:.3rem .5rem;padding-bottom:max(.3rem,env(safe-area-inset-bottom));z-index:50;
+            padding-left:calc(.5rem + env(safe-area-inset-left));
+            padding-right:calc(.5rem + env(safe-area-inset-right));
             flex-shrink:0;position:relative;
         }
         .bnav::before{
