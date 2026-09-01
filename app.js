@@ -784,6 +784,12 @@ window.toggleGTKarat=()=>{
     const eq=document.getElementById('gtEqBox');
     const kr=document.getElementById('gtKaratRow');
     const ex=document.getElementById('gt730Extra');
+    /* «من أخذه»: يظهر فقط عند الاستلام (قبضت) + دينار */
+    const tb=document.getElementById('gtTakenBy'), tbh=document.getElementById('gtTakenByHint');
+    const showTB=(gtType==='take'&&m==='دينار');
+    if(tb)tb.style.display=showTB?'block':'none';
+    if(tbh)tbh.style.display=showTB?'block':'none';
+    if(!showTB&&tb)tb.value='';
     if(m==='ذهب 730'){
         l.textContent='الوزن (غ)';
         if(kr)kr.style.display='';
@@ -860,12 +866,12 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v93';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v94';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
     document.getElementById('gtMetal').value='دينار';
-    document.getElementById('gtNote').value='';
+    document.getElementById('gtNote').value='';var _tb=document.getElementById('gtTakenBy');if(_tb)_tb.value='';
     const kEl=document.getElementById('gtKarat');if(kEl)kEl.value='730';
     /* تصفير قائمة سبائك 730 الإضافية */
     _gt730Cnt=0; const gb=document.getElementById('gt730Bars'); if(gb)gb.innerHTML='';
@@ -894,6 +900,10 @@ window.saveGT=()=>{
         ? gt730Bars.reduce((s,b)=>s+b.w*b.k/730,0)
         : (isG730?(a*k)/730:a);
     const note=document.getElementById('gtNote').value.trim();
+    /* «من أخذه»: اسم زبون آخر (استلام دينار فقط) */
+    const _tbEl=document.getElementById('gtTakenBy');
+    const takenBy=(gtType==='take'&&m==='دينار'&&_tbEl&&_tbEl.style.display!=='none')?(_tbEl.value||'').trim():'';
+    if(takenBy&&takenBy===c)return toast('«من أخذه» يجب أن يكون زبوناً مختلفاً عن الدافع','error');
     const dt=new Date().toLocaleDateString('fr-FR');
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 
@@ -929,17 +939,18 @@ window.saveGT=()=>{
         };
     });
     emitEvent('GT',
-        {gtType,c,m,finalAmount,realW:isG730?totW:undefined,realK:isG730?(uniformK||730):undefined,note,barsAdd,barsRemove,barUpdates},
+        {gtType,c,m,finalAmount,realW:isG730?totW:undefined,realK:isG730?(uniformK||730):undefined,note,barsAdd,barsRemove,barUpdates,takenBy:takenBy||undefined},
         {
             bars:Object.keys(dispBars).length?dispBars:undefined,
             op:{c,t:gtType==='give'?'أعطيت':'استلمت',m,a:finalAmount,
                 _ts:Date.now(),dt:nowStr,
-                ...(isG730?{realW:totW,realK:(uniformK||'متعدد'),note,bars730:gt730Bars||undefined}:{note})}
+                ...(takenBy?{note:('أخذه: '+takenBy)+(note?(' · '+note):'')}:{}),
+                ...(isG730?{realW:totW,realK:(uniformK||'متعدد'),note,bars730:gt730Bars||undefined}:(takenBy?{}:{note}))}
         }
     );
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
-    document.getElementById('gtNote').value='';
+    document.getElementById('gtNote').value='';var _tb=document.getElementById('gtTakenBy');if(_tb)_tb.value='';
     const gb=document.getElementById('gt730Bars'); if(gb)gb.innerHTML=''; _gt730Cnt=0;
     document.getElementById('gtBalBox').style.display='none';
     closeModal('gtModal');

@@ -320,8 +320,22 @@ function _applyEvt(st,evt){
                 stUpdDebt(d.c,d.m,d.finalAmount);
             }else{
                 applyBars();
-                if(!d.paper&&d.m!=='ذهب 730'&&d.m!=='ذهب 24')st.B[d.m]=(st.B[d.m]||0)+d.finalAmount;
-                stUpdDebt(d.c,d.m,-d.finalAmount);
+                if(d.takenBy){
+                    /* «من أخذه»: أحمد دفع (ينقص دينه)، ومحمد أخذ (يزيد دينه)، الخزنة ثابتة */
+                    stUpdDebt(d.c,d.m,-d.finalAmount);          /* الدافع ينقص دينه */
+                    stUpdDebt(d.takenBy,d.m,d.finalAmount);     /* الآخذ يزيد دينه */
+                }else{
+                    if(!d.paper&&d.m!=='ذهب 730'&&d.m!=='ذهب 24')st.B[d.m]=(st.B[d.m]||0)+d.finalAmount;
+                    stUpdDebt(d.c,d.m,-d.finalAmount);
+                }
+            }
+            /* سطر إضافيّ في سجلّ «من أخذه» */
+            if(d.takenBy&&disp.op){
+                st.ops.push({
+                    c:d.takenBy, t:'استلمت', m:d.m, a:d.finalAmount,
+                    _ts:(disp.op._ts||evt.ts||Date.now()),
+                    dt:disp.op.dt||'', note:'عن طريق '+(d.c||''), id:evt.id+'_tb'
+                });
             }
             /* أحداث قديمة بلا سطر سجلّ: نولّد لها سطراً من بياناتها (بحقول احتياطية) */
             if(!disp.op){
