@@ -866,7 +866,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v96';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v98';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -2201,7 +2201,10 @@ function _renderSettleRows(){
         /* موجب = تسالو (هو مدين لك) ، سالب = يسالك (أنت مدين له) */
         const dir=val>0?'تسالو':'يسالك';
         const isGold=type==='ذهب 730'||type==='ذهب 24';
-        const btnLabel=isGold?(val<0?'🛒 شراء':'💰 بيع'):'صفّي';
+        const isDollar=type==='دولار';
+        /* الدولار يتكيّف كالذهب: أحمر (سالب)=شراء · أخضر (موجب)=بيع */
+        const btnLabel=(isGold||isDollar)?(val<0?'🛒 شراء':'💰 بيع'):'صفّي';
+        const mainBtnClick=isDollar?'_openDollarSettleModal(false)':`settleOne('${type}')`;
         /* أزرار التسوية الإضافية للذهب */
         const extraBtn=type==='ذهب 730'
             ?`<button class="btn-settle" style="background:rgba(217,119,6,.12);color:#d97706;border-color:#d97706;font-size:.72rem;padding:.3rem .5rem" onclick="settle730With24()">🔄 بـ24</button>`
@@ -2216,7 +2219,7 @@ function _renderSettleRows(){
                 <div class="sr-val ${cls}">${fmt(Math.abs(val),decs[type])} ${units[type]}</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:.3rem;align-items:flex-end">
-                <button class="btn-settle" onclick="settleOne('${type}')">${btnLabel}</button>
+                <button class="btn-settle" onclick="${mainBtnClick}">${btnLabel}</button>
                 ${extraBtn}
                 ${xferBtn}
             </div>
@@ -2303,7 +2306,8 @@ window._xferShipCalc=()=>{
     const sp=readNum('xferShipPrice')||0;
     const W=readNum('xferW')||0;
     const usd=sp*W;
-    pv.textContent=usd>0?`دولار على الهدف: ${fmt(W,2)}غ × ${fmt(sp,2)}$ = ${fmt(usd,2)} $`:'';
+    const feeW=W/1000;
+    pv.innerHTML=usd>0?`دولار على الهدف: ${fmt(W,2)}غ × ${fmt(sp,2)}$ = <b>${fmt(usd,2)} $</b><br>الهدف يستلم: <b>${fmt(W+feeW,3)}غ</b> (${fmt(W,2)} + أجرة ${fmt(feeW,3)}غ)`:'';
 };
 window.doXfer=()=>{
     const to=(document.getElementById('xferTarget').value||'').trim();
@@ -2321,20 +2325,22 @@ window.doXfer=()=>{
         if(_xferSrcType==='ذهب 730'){dstType='ذهب 24';wDst=W*730/1000;}
         else{dstType='ذهب 730';wDst=W*1000/730;}
     }
-    /* الشحن: دولار على الهدف = سعر الشحن × الوزن المحوّل (بنفس اتجاه تحويل الذهب) */
-    let shipUsd=0, shipPrice=0;
+    /* الشحن: دولار على الهدف = سعر الشحن × الوزن + أجرة وزن = الوزن ÷ 1000 (بنفس اتجاه الذهب) */
+    let shipUsd=0, shipPrice=0, feeW=0, wDstFinal=wDst;
     const _chk=document.getElementById('xferShipChk');
     if(_xferSrcType==='ذهب 24'&&_chk&&_chk.checked){
         shipPrice=readNum('xferShipPrice')||0;
         if(shipPrice<=0){toast('⚠️ أدخل سعر الشحن','error');return;}
-        shipUsd=sign*(shipPrice*wDst);   /* بنفس اتجاه الذهب */
+        shipUsd=sign*(shipPrice*wDst);          /* دولار الشحن */
+        feeW=wDst/1000;                          /* أجرة الوزن: 1غ لكل كيلو */
+        wDstFinal=wDst+feeW;                     /* الهدف يستلم الوزن + الأجرة */
     }
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     emitEvent('XFER',
-        {from:_settleCustomer,to,srcType:_xferSrcType,dstType,srcDelta:sign*W,dstDelta:sign*wDst,w:W,wDst,
-         shipUsd:shipUsd||undefined,shipPrice:shipPrice||undefined},
+        {from:_settleCustomer,to,srcType:_xferSrcType,dstType,srcDelta:sign*W,dstDelta:sign*wDstFinal,w:W,wDst:wDstFinal,
+         shipUsd:shipUsd||undefined,shipPrice:shipPrice||undefined,feeW:feeW||undefined},
         {op:{c:_settleCustomer,t:'تحويل لزبون',m:_xferSrcType,a:W,_ts:Date.now(),dt:nowStr,
-             xferTo:to,xferDstType:dstType,xferWDst:wDst,xferSign:sign,
+             xferTo:to,xferDstType:dstType,xferWDst:wDstFinal,xferSign:sign,
              ...(shipUsd?{note:'بشحن '+fmt(shipPrice,2)+'$ → '+fmt(Math.abs(shipUsd),2)+'$'}:{})}}
     );
     closeModal('xferModal');closeModal('settleModal');
