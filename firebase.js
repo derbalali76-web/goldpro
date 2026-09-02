@@ -456,6 +456,21 @@ function _applyEvt(st,evt){
             break;
         }
 
+        case 'SETTLE_DOLLAR':{
+            /* تصفية الدولار (بيع/شراء) — بنفس منطق SETTLE_GSM بلا سبائك */
+            const {c,net,isBuy,cashTotal,remaining}=d;
+            if(d.freeBuy){
+                /* شراء حرّ: الزبون مدين لك بالدولار (+)، وأنا مدين للزبون بالنقد (−) */
+                stUpdDebt(c,'دولار',d.w);
+                stUpdDebt(c,'دينار',cashTotal);
+            }else{
+                stClearDebt(c,'دولار');
+                if(Math.abs(remaining)>0.001)stUpdDebt(c,'دولار',net>0?remaining:-remaining);
+                stUpdDebt(c,'دينار',cashTotal);
+            }
+            break;
+        }
+
         case 'SETTLE_GSM':{
             const {c,type,net,isBuy,cashTotal,remaining}=d;
             if(d.freeBuy){
@@ -522,6 +537,8 @@ function _applyEvt(st,evt){
             /* تحويل رصيد ذهب من حساب زبون إلى آخر — لا يمسّ المخزون إطلاقاً */
             stUpdDebt(d.from, d.srcType, -d.srcDelta);   // إنقاص من حساب المصدر
             stUpdDebt(d.to,   d.dstType,  d.dstDelta);   // إضافة لحساب الهدف (بنفس الاتجاه)
+            /* شحن: يُسجَّل دولار على الهدف بنفس اتجاه تحويل الذهب (سعر الشحن × الوزن المحوّل) */
+            if(d.shipUsd){ stUpdDebt(d.to,'دولار', d.shipUsd); }
             /* سطر سجل للهدف (تحويل وارد) كي يظهر في كشف حسابه أيضاً */
             st.ops.push({
                 c: d.to, t:'تحويل وارد', m: d.dstType, a: (d.wDst!=null?d.wDst:d.w),
@@ -530,6 +547,14 @@ function _applyEvt(st,evt){
                 xferFrom: d.from, xferInType: d.dstType,
                 id: evt.id+'_in'
             });
+            if(d.shipUsd){
+                st.ops.push({
+                    c: d.to, t:'شحن (دولار)', m:'دولار', a: d.shipUsd,
+                    _ts:(disp.op&&disp.op._ts)||evt.ts||Date.now(),
+                    dt:(disp.op&&disp.op.dt)||'', note:'شحن '+(d.w||'')+'غ عن طريق '+d.from,
+                    id: evt.id+'_ship'
+                });
+            }
             break;
         }
 

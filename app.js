@@ -866,7 +866,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v94';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v96';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -996,9 +996,9 @@ window.showDollarBalance=()=>{
     box.innerHTML=html;
     box.style.display='block';
 };
-window.openDollar=(t)=>{
+window.openDollar=(t,prefillCust)=>{
     document.getElementById('dollarTitle').textContent=t==='buy'?'💲 شراء دولار':'💲 بيع دولار';
-    document.getElementById('dollarCustomer').value='';
+    document.getElementById('dollarCustomer').value=prefillCust||'';
     document.getElementById('dollarAmount').value='';
     document.getElementById('dollarRate').value=dollarRate;
     document.getElementById('dollarParty').value='';
@@ -1009,7 +1009,8 @@ window.openDollar=(t)=>{
     _dollPaid=true; /* إعادة ضبط لخالص */
     setDollPaid(true);
     document.getElementById('dollarModal').classList.add('active');
-    setTimeout(()=>document.getElementById('dollarCustomer').focus(),350);
+    if(prefillCust&&typeof showDollarBalance==='function'){try{showDollarBalance();}catch(e){}}
+    setTimeout(()=>document.getElementById(prefillCust?'dollarAmount':'dollarCustomer').focus(),350);
 };
 window.saveDollar=()=>{
     const c=document.getElementById('dollarCustomer').value.trim();
@@ -2184,6 +2185,11 @@ function _renderSettleRows(){
             <button class="btn-settle" style="flex:1;background:rgba(16,185,129,.12);color:#059669;border-color:#059669" onclick="_openGoldSettleModal('ذهب 730',true)">🛒 شراء 730</button>
             <button class="btn-settle" style="flex:1;background:rgba(16,185,129,.12);color:#059669;border-color:#059669" onclick="_openGoldSettleModal('ذهب 24',true)">🛒 شراء 24</button>
         </div>
+        <div style="font-size:.72rem;color:var(--t3);margin:.55rem 0 .4rem">💲 بيع / شراء دولار مع الزبون:</div>
+        <div style="display:flex;gap:.4rem">
+            <button class="btn-settle" style="flex:1;background:rgba(16,185,129,.12);color:#059669;border-color:#059669" onclick="_openDollarSettleModal(true)">🛒 شراء دولار</button>
+            <button class="btn-settle" style="flex:1;background:rgba(220,38,38,.1);color:#dc2626;border-color:#dc2626" onclick="_openDollarSettleModal(false)">💰 بيع دولار</button>
+        </div>
     </div>`+((typeof _usersCache!=='undefined'&&_usersCache[_currentUser]&&_usersCache[_currentUser].isAdmin)?`
     <div style="margin-top:.55rem;display:flex;gap:.4rem">
         <button class="btn-settle" style="flex:1;background:rgba(100,116,139,.12);color:#475569;border-color:#94a3b8" onclick="_adminFixDebt('${_settleCustomer.replace(/'/g,"\\'")}')">🔧 ضبط رصيد</button>
@@ -2248,6 +2254,15 @@ window.openXfer=(srcType)=>{
         _xferCalc();
     }
     document.getElementById('xferModal').classList.add('active');
+    /* خيار الشحن: لذهب 24 فقط */
+    const shipRow=document.getElementById('xferShipRow');
+    if(shipRow){
+        shipRow.style.display=(srcType==='ذهب 24')?'flex':'none';
+        const chk=document.getElementById('xferShipChk'); if(chk)chk.checked=false;
+        const inner=document.getElementById('xferShipInner'); if(inner)inner.style.display='none';
+        const sp=document.getElementById('xferShipPrice'); if(sp)sp.value='';
+        const pv=document.getElementById('xferShipPreview'); if(pv)pv.textContent='';
+    }
     if(window._acAttach)_acAttach('xferTarget');
     setTimeout(()=>document.getElementById('xferTarget').focus(),320);
 };
@@ -2275,6 +2290,21 @@ function _xferCalc(){
         +((isGold&&_xferMode==='conv')?`<br><span style="font-size:.7rem;color:var(--t3)">${_xferSrcType==='ذهب 730'?'المكافئ = الكمية × 730 ÷ 1000':'المكافئ = الكمية × 1000 ÷ 730'}</span>`:'');
 }
 window._xferCalc=_xferCalc;
+window._xferShipToggle=()=>{
+    const chk=document.getElementById('xferShipChk');
+    const inner=document.getElementById('xferShipInner');
+    if(inner)inner.style.display=(chk&&chk.checked)?'block':'none';
+    _xferShipCalc();
+};
+window._xferShipCalc=()=>{
+    const pv=document.getElementById('xferShipPreview'); if(!pv)return;
+    const chk=document.getElementById('xferShipChk');
+    if(!chk||!chk.checked){pv.textContent='';return;}
+    const sp=readNum('xferShipPrice')||0;
+    const W=readNum('xferW')||0;
+    const usd=sp*W;
+    pv.textContent=usd>0?`دولار على الهدف: ${fmt(W,2)}غ × ${fmt(sp,2)}$ = ${fmt(usd,2)} $`:'';
+};
 window.doXfer=()=>{
     const to=(document.getElementById('xferTarget').value||'').trim();
     if(!to){toast('⚠️ اكتب اسم الزبون الهدف','error');return;}
@@ -2291,14 +2321,24 @@ window.doXfer=()=>{
         if(_xferSrcType==='ذهب 730'){dstType='ذهب 24';wDst=W*730/1000;}
         else{dstType='ذهب 730';wDst=W*1000/730;}
     }
+    /* الشحن: دولار على الهدف = سعر الشحن × الوزن المحوّل (بنفس اتجاه تحويل الذهب) */
+    let shipUsd=0, shipPrice=0;
+    const _chk=document.getElementById('xferShipChk');
+    if(_xferSrcType==='ذهب 24'&&_chk&&_chk.checked){
+        shipPrice=readNum('xferShipPrice')||0;
+        if(shipPrice<=0){toast('⚠️ أدخل سعر الشحن','error');return;}
+        shipUsd=sign*(shipPrice*wDst);   /* بنفس اتجاه الذهب */
+    }
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     emitEvent('XFER',
-        {from:_settleCustomer,to,srcType:_xferSrcType,dstType,srcDelta:sign*W,dstDelta:sign*wDst,w:W,wDst},
+        {from:_settleCustomer,to,srcType:_xferSrcType,dstType,srcDelta:sign*W,dstDelta:sign*wDst,w:W,wDst,
+         shipUsd:shipUsd||undefined,shipPrice:shipPrice||undefined},
         {op:{c:_settleCustomer,t:'تحويل لزبون',m:_xferSrcType,a:W,_ts:Date.now(),dt:nowStr,
-             xferTo:to,xferDstType:dstType,xferWDst:wDst,xferSign:sign}}
+             xferTo:to,xferDstType:dstType,xferWDst:wDst,xferSign:sign,
+             ...(shipUsd?{note:'بشحن '+fmt(shipPrice,2)+'$ → '+fmt(Math.abs(shipUsd),2)+'$'}:{})}}
     );
     closeModal('xferModal');closeModal('settleModal');
-    toast(`🔁 حُوّل ${fmt(W,dec)} ${unit} من ${_settleCustomer} إلى ${to}`+((isGold&&_xferMode==='conv')?` (محوّل لـ${dstType})`:''),'success');
+    toast(`🔁 حُوّل ${fmt(W,dec)} ${unit} من ${_settleCustomer} إلى ${to}`+(shipUsd?` + شحن ${fmt(Math.abs(shipUsd),2)}$`:'')+((isGold&&_xferMode==='conv')?` (محوّل لـ${dstType})`:''),'success');
 };
 function _ensureXferModal(){
     if(document.getElementById('xferModal'))return;
@@ -2324,13 +2364,25 @@ function _ensureXferModal(){
                 <label id="xferWLabel" style="font-size:.78rem;color:var(--t2);display:block;margin-bottom:.3rem">المبلغ المحوّل (غ)</label>
                 <input id="xferW" type="text" inputmode="decimal" dir="ltr" placeholder="0,000"
                     style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:inherit;text-align:right;box-sizing:border-box"
-                    oninput="liveNum(this);_xferCalc()" />
+                    oninput="liveNum(this);_xferCalc();if(window._xferShipCalc)_xferShipCalc()" />
             </div>
             <div id="xferModeRow" style="display:flex;gap:.5rem">
                 <button id="xferModeSame" onclick="_setXferMode('same')"></button>
                 <button id="xferModeConv" onclick="_setXferMode('conv')"></button>
             </div>
             <div id="xferPreview" style="background:rgba(124,58,237,.07);border-radius:8px;padding:.6rem;text-align:center;font-size:.85rem;line-height:1.6"></div>
+            <div id="xferShipRow" style="display:none;background:rgba(16,163,74,.07);border:1px solid rgba(16,163,74,.25);border-radius:8px;padding:.6rem;flex-direction:column;gap:.5rem">
+                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.82rem;font-weight:700">
+                    <input type="checkbox" id="xferShipChk" onchange="_xferShipToggle()" style="width:18px;height:18px">
+                    🚢 بشحن (يُسجَّل دولار على الهدف = سعر الشحن × الوزن)
+                </label>
+                <div id="xferShipInner" style="display:none">
+                    <input id="xferShipPrice" type="text" inputmode="decimal" dir="ltr" placeholder="سعر الشحن ($/غ) مثلاً 3,2"
+                        style="width:100%;padding:.6rem;border:1.5px solid var(--border);border-radius:8px;font-size:.95rem;font-family:inherit;text-align:right;box-sizing:border-box"
+                        oninput="liveNum(this);_xferShipCalc()" />
+                    <div id="xferShipPreview" style="font-size:.74rem;color:#16a34a;text-align:center;margin-top:.4rem;font-weight:700"></div>
+                </div>
+            </div>
             <div style="font-size:.72rem;color:var(--t3);text-align:center;line-height:1.5">يُخصم من حساب المصدر ويُضاف لحساب الهدف — دون أي تأثير على المخزون</div>
             <button class="bg" style="width:100%;padding:.7rem;font-size:.93rem" onclick="doXfer()">✅ تأكيد التحويل</button>
         </div>
@@ -2520,6 +2572,99 @@ window._gsmConfirm=function(){
     toast(msg);
     /* تنزيل تلقائي مُلغى */
 };
+
+/* ═══════════ تصفية الدولار (بيع/شراء) — بنفس آلية ذهب 730 ═══════════ */
+let _dsNet=0,_dsCustomer='',_dsForceBuy=false;
+function _openDollarSettleModal(forceBuy){
+    const net=debts.filter(x=>x.c===_settleCustomer&&x.type==='دولار').reduce((s,x)=>s+(x.a||0),0);
+    if(Math.abs(net)<0.001&&!forceBuy){toast('لا يوجد رصيد دولار','info');return;}
+    _ensureDollarSettleModal();
+    _dsNet=net; _dsCustomer=_settleCustomer; _dsForceBuy=!!forceBuy;
+    const isBuy=forceBuy?true:(net<0);
+    const icon=isBuy?'🛒':'💰', action=isBuy?'شراء':'بيع';
+    document.getElementById('dsmTitle').textContent=`${icon} ${action} دولار — ${_settleCustomer}`;
+    document.getElementById('dsmQty').textContent=(forceBuy&&Math.abs(net)<0.001)?'شراء حر':fmt(Math.abs(net),2)+' $';
+    document.getElementById('dsmPartialW').value=(forceBuy&&Math.abs(net)<0.001)?'':Math.abs(net).toString().replace('.',',');
+    document.getElementById('dsmRate').value=dollarRate;
+    document.getElementById('dsmTotalBox').style.display='none';
+    const p=document.getElementById('dsmDirPreview'); if(p)p.innerHTML='';
+    document.getElementById('dollarSettleModal').classList.add('active');
+    setTimeout(()=>document.getElementById('dsmPartialW').focus(),320);
+}
+window._dsmCalc=function(){
+    const rate=readNum('dsmRate')||0;
+    const w=readNum('dsmPartialW')||0;
+    const total=w*rate/100;                       /* وحدة الدولار: ×rate÷100 */
+    const box=document.getElementById('dsmTotalBox');
+    if(rate>0&&w>0){
+        box.style.display='flex';
+        document.getElementById('dsmTotal').textContent=fmt(total,0)+' دج';
+        const net=_dsNet, isBuy=_dsForceBuy?true:(net<0);
+        let prev=document.getElementById('dsmDirPreview');
+        if(!prev){prev=document.createElement('div');prev.id='dsmDirPreview';prev.style.cssText='font-size:.72rem;line-height:1.7;background:var(--card2);border-radius:8px;padding:.55rem;margin-top:.1rem';box.parentNode.insertBefore(prev,box.nextSibling);}
+        let cashTxt,dTxt;
+        if(_dsForceBuy){
+            cashTxt=`ستدين للزبون بـ <b>${fmt(total,0)} دج</b>`;
+            dTxt=`الزبون سيدين لك <b>${fmt(w,2)} $</b>`;
+        }else{
+            const dNew=net>0?(net-w):(net+w);
+            cashTxt=isBuy?`ستدين للزبون بـ <b>${fmt(total,0)} دج</b>`:`الزبون سيدين لك بـ <b>${fmt(total,0)} دج</b>`;
+            dTxt=Math.abs(dNew)<0.001?'رصيد الدولار: صفر':(dNew>0?`الزبون سيدين لك <b>${fmt(Math.abs(dNew),2)} $</b>`:`ستدين للزبون <b>${fmt(Math.abs(dNew),2)} $</b>`);
+        }
+        prev.innerHTML=`💵 ${cashTxt}<br>💲 ${dTxt}`;
+    }else{ box.style.display='none'; const prev=document.getElementById('dsmDirPreview'); if(prev)prev.innerHTML=''; }
+};
+window._dsmConfirm=function(){
+    const rate=readNum('dsmRate');
+    if(!rate||rate<=0){toast('⚠️ أدخل سعر الصرف','error');return;}
+    const w=readNum('dsmPartialW');
+    if(!w||w<=0){toast('⚠️ أدخل كمية التصفية','error');return;}
+    const net=_dsNet, c=_dsCustomer;
+    const isBuy=_dsForceBuy?true:(net<0);
+    const total=Math.round(w*rate/100);
+    const prevBal=getCustBal(c,'دينار');
+    const iid='INV-'+uid();
+    const cashTotal=_dsForceBuy?-total:(isBuy?-total:total);
+    const settledAmt=isBuy?-w:w;
+    const remaining=parseFloat((Math.abs(net)-w).toFixed(2));
+    const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    emitEvent('SETTLE_DOLLAR',
+        {c,net,isBuy,cashTotal,remaining,w,rate,iid,freeBuy:_dsForceBuy},
+        {op:{c,t:_dsForceBuy?'شراء دولار':'تصفية دولار',m:'دولار',a:settledAmt,_ts:Date.now(),dt:nowStr,cashSettle:true,cashTotal,partial:remaining>0.001}}
+    );
+    closeModal('dollarSettleModal');
+    if(typeof _renderSettleRows==='function')_renderSettleRows();
+    toast(remaining>0.001?`✅ صُفّي ${fmt(w,2)}$ — الباقي: ${fmt(remaining,2)}$`:`✅ تمّت تصفية الدولار`,'success');
+};
+function _ensureDollarSettleModal(){
+    if(document.getElementById('dollarSettleModal'))return;
+    const div=document.createElement('div');
+    div.id='dollarSettleModal'; div.className='modal-overlay';
+    div.innerHTML=`
+    <div class="modal-box" style="max-width:340px">
+        <div class="modal-header"><h3 id="dsmTitle" style="font-size:.9rem"></h3><button class="close-btn" onclick="closeModal('dollarSettleModal')">✕</button></div>
+        <div style="padding:1rem;display:flex;flex-direction:column;gap:.7rem">
+            <div style="background:var(--card2);border-radius:8px;padding:.6rem;font-size:.82rem">الرصيد: <strong id="dsmQty"></strong></div>
+            <div>
+                <label style="font-size:.78rem;color:var(--t2);display:block;margin-bottom:.3rem">الكمية المصفّاة ($)</label>
+                <input id="dsmPartialW" type="text" inputmode="decimal" dir="ltr" placeholder="0,00"
+                    style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:inherit;text-align:right;box-sizing:border-box"
+                    oninput="liveNum(this);_dsmCalc()" />
+            </div>
+            <div>
+                <label style="font-size:.78rem;color:var(--t2);display:block;margin-bottom:.3rem">سعر الصرف (دج/$ — بالسنتيم)</label>
+                <input id="dsmRate" type="text" inputmode="decimal" dir="ltr" placeholder="السعر"
+                    style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:inherit;text-align:right;box-sizing:border-box"
+                    oninput="liveNum(this);_dsmCalc()" />
+            </div>
+            <div id="dsmTotalBox" style="display:none;justify-content:space-between;background:var(--card2);border-radius:8px;padding:.6rem;font-weight:800">
+                <span>الإجمالي:</span><span id="dsmTotal"></span>
+            </div>
+            <button class="bg" style="width:100%;padding:.7rem;font-size:.93rem" onclick="_dsmConfirm()">✅ تأكيد</button>
+        </div>
+    </div>`;
+    document.body.appendChild(div);
+}
 
 /* ═══════════ تسوية ذهب 730 بـ ذهب 24 (تحويل بالعيار) ═══════════ */
 window.settle730With24=function(){
