@@ -866,7 +866,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v99';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v100';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1733,8 +1733,7 @@ function opDetailLines(o){
             if(inv.akhd) lines.push(`✅ المقبوض: ${f(inv.akhd,0)} دج`);
         }
     } else if(t==='شحن'){
-        if(o.sp) lines.push(`💲 السعر: ${o.sp} $/100غ`);
-        if(o.rc) lines.push(`📦 المستلم: ${f(o.rc,2)} غ`);
+        /* في سجلّ المكتب: يُظهر الوزن المستلم فقط (بلا سعر أو وزن أصلي) */
     } else if(t==='رافيناج'){
         if(o.sentW) lines.push(`⚖️ المرسل: ${f(o.sentW,2)} غ 730`);
         if(o.rec24!=null) lines.push(`✨ المستلم: ${f(o.rec24,2)} غ 24 خالص`);
@@ -1991,6 +1990,8 @@ function buildCustomerLogHtml(c,custOps){
         const unit=o.m==='دينار'?'DZD':o.m==='دولار'?'$':'g';
         const amtColor=out?'#dc2626':'#16a34a';
         const amtSign=out?'−':'+';
+        /* الشحن: يُعرض الوزن المستلم فقط */
+        const amtVal=(o.t==='شحن'&&o.rc!=null)?o.rc:o.a;
         const tc=tColor[o.t]||'#374151';
         const bg=i%2===0?'#fff':'#fafaf7';
         const dlines=opDetailLines(o);
@@ -2001,7 +2002,7 @@ function buildCustomerLogHtml(c,custOps){
             <td style="padding:7px 5px;text-align:center;color:#9ca3af;font-size:12px;border-bottom:1px solid #e5e7eb">${custOps.length-i}</td>
             <td style="padding:7px 6px;font-size:11px;color:#374151;border-bottom:1px solid #e5e7eb;white-space:nowrap">${o.dt||'—'}</td>
             <td style="padding:7px 6px;font-size:12px;font-weight:700;color:${tc};border-bottom:1px solid #e5e7eb">${o.t||'—'}</td>
-            <td style="padding:7px 6px;font-size:13px;font-weight:900;color:${amtColor};border-bottom:1px solid #e5e7eb;white-space:nowrap">${amtSign}${f(o.a,(o.m==='دينار'||o.m==='دولار')?0:2)} ${unit}</td>
+            <td style="padding:7px 6px;font-size:13px;font-weight:900;color:${amtColor};border-bottom:1px solid #e5e7eb;white-space:nowrap">${amtSign}${f(amtVal,(o.m==='دينار'||o.m==='دولار')?0:2)} ${unit}</td>
             <td style="padding:7px 6px;font-size:11px;border-bottom:1px solid #e5e7eb">${detailHtml}</td>
         </tr>`;}).join('');
 
