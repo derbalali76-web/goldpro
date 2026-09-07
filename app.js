@@ -866,7 +866,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v98';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v99';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1870,7 +1870,7 @@ window.previewSendLog=()=>{
 window.sendCustomerLog=()=>{
     const c=document.getElementById('sendLogCustomer').value.trim();
     if(!c)return toast('اختر زبوناً أولاً','error');
-    const custOps=ops.filter(o=>(o.c||'').toLowerCase()===c.toLowerCase()&&o.t!=='شحن');
+    const custOps=ops.filter(o=>(o.c||'').toLowerCase()===c.toLowerCase());
     if(!custOps.length)return toast('لا توجد معاملات لهذا الزبون','error');
 
     const outTypes=new Set(['أعطيت','بيع','بيع دولار','شحن','مصاريف','سلف','دولار صادر']);
@@ -2061,7 +2061,7 @@ function _logPdfOpts(c){
 window.sendCustomerLogWA=async()=>{
     const c=document.getElementById('sendLogCustomer').value.trim();
     if(!c)return toast('اختر زبوناً أولاً','error');
-    const custOps=ops.filter(o=>(o.c||'').toLowerCase()===c.toLowerCase()&&o.t!=='شحن');
+    const custOps=ops.filter(o=>(o.c||'').toLowerCase()===c.toLowerCase());
     if(!custOps.length)return toast('لا توجد معاملات لهذا الزبون','error');
 
     toast('⏳ جاري إنشاء PDF...','info');
@@ -3838,7 +3838,7 @@ window.showDubaiMonth=(mKey)=>{
 /* ═══════════ سجلّ الزبون (يُفتح بالنقر على اسمه) — بنفس تنسيق السجلّ المُرسَل ═══════════ */
 window.showCustomerLog=(name)=>{
     if(!name)return;
-    const custOps=ops.filter(o=>(o.c||'').toLowerCase()===name.toLowerCase()&&o.t!=='شحن');
+    const custOps=ops.filter(o=>(o.c||'').toLowerCase()===name.toLowerCase());
     let html='';
     try{ html=buildCustomerLogHtml(name,custOps); }catch(e){ html=''; }
     if(!html){ toast('لا توجد معاملات لهذا الزبون','info'); return; }
