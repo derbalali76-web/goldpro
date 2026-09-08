@@ -805,29 +805,47 @@ window.toggleGTKarat=()=>{
     }
 };
 let _gt730Cnt=0;
-window._addGT730Bar=(w,k)=>{
+window._addGT730Bar=(w,k,focusIt)=>{
     _gt730Cnt++; const i=_gt730Cnt;
     const box=document.getElementById('gt730Bars'); if(!box)return;
     const row=document.createElement('div'); row.id='gt730Row_'+i;
     row.style.cssText='display:flex;gap:.35rem;margin-bottom:.3rem;align-items:center';
     row.innerHTML=`
-        <input type="text" inputmode="decimal" id="gt730W_${i}" placeholder="وزن إضافي (غ)" value="${w!=null?w:''}" dir="ltr" oninput="liveNum(this);window._gt730Auto();window.calcGTEq()"
+        <input type="text" inputmode="decimal" id="gt730W_${i}" placeholder="وزن إضافي (غ)" value="${w!=null?w:''}" dir="ltr" oninput="liveNum(this);window.calcGTEq()" onkeydown="window._gt730Nav(event,${i},'W')"
             style="flex:2;padding:.4rem;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--t);font-family:Tajawal,sans-serif;font-size:.74rem;font-weight:800;text-align:right">
-        <input type="text" inputmode="numeric" id="gt730K_${i}" placeholder="العيار" value="${k!=null?k:''}" dir="ltr" oninput="window.calcGTEq()"
+        <input type="text" inputmode="numeric" id="gt730K_${i}" placeholder="العيار" value="${k!=null?k:''}" dir="ltr" oninput="window.calcGTEq()" onkeydown="window._gt730Nav(event,${i},'K')"
             style="flex:1;padding:.4rem;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--t);font-family:Tajawal,sans-serif;font-size:.74rem;font-weight:800;text-align:center">
         <button type="button" onclick="document.getElementById('gt730Row_${i}').remove();window.calcGTEq()"
             style="border:none;background:transparent;color:var(--rd);cursor:pointer;font-size:.9rem;padding:.1rem .3rem">🗑️</button>`;
     box.appendChild(row);
-    const wEl=document.getElementById('gt730W_'+i); if(wEl&&w==null)wEl.focus();
+    if(focusIt){ const wEl=document.getElementById('gt730W_'+i); if(wEl)wEl.focus(); }
     return i;
 };
-/* يزيد سطراً تلقائياً عند ملء آخر سطر (لا اقتراح للعيار) */
-window._gt730Auto=()=>{
-    const rows=document.querySelectorAll('#gt730Bars [id^="gt730Row_"]');
-    if(!rows.length){ if(readNum('gtAmount')>0)_addGT730Bar(); return; }
-    const last=rows[rows.length-1];
-    const i=last.id.replace('gt730Row_','');
-    if(readNum('gt730W_'+i)>0)_addGT730Bar();   /* آخر سطر امتلأ → أضف جديداً */
+/* لا إضافة تلقائية عند الوزن — تبقى الدالة للتوافق لكنها لا تسرق التركيز */
+window._gt730Auto=()=>{};
+/* التنقّل بالأسهم + الإضافة عند إكمال العيار (Enter أو سهم أسفل من خانة العيار) */
+window._gt730Nav=(e,i,field)=>{
+    const key=e.key;
+    const rows=[...document.querySelectorAll('#gt730Bars [id^="gt730Row_"]')];
+    const idx=rows.findIndex(r=>r.id==='gt730Row_'+i);
+    const focus=(id)=>{const el=document.getElementById(id);if(el){el.focus();el.select&&el.select();}};
+    if(key==='Enter'||key==='ArrowDown'){
+        e.preventDefault();
+        if(field==='W'){ focus('gt730K_'+i); return; }      /* من الوزن → العيار */
+        /* من العيار: انتقل للسطر التالي أو أضف جديداً (بلا سرقة تركيز إن Enter فقط عند الإكمال) */
+        if(idx>=0&&idx<rows.length-1){ const ni=rows[idx+1].id.replace('gt730Row_',''); focus('gt730W_'+ni); }
+        else { const ni=_addGT730Bar(null,null,true); }       /* آخر سطر → أضف جديداً وانتقل له */
+        return;
+    }
+    if(key==='ArrowUp'){
+        e.preventDefault();
+        if(field==='K'){ focus('gt730W_'+i); return; }        /* من العيار → الوزن */
+        if(idx>0){ const pi=rows[idx-1].id.replace('gt730Row_',''); focus('gt730K_'+pi); }  /* لأعلى */
+        else { focus('gtKarat'); }                             /* أول سطر → الحقل الرئيسي */
+        return;
+    }
+    if(key==='ArrowRight'&&field==='K'){ e.preventDefault(); focus('gt730W_'+i); }
+    if(key==='ArrowLeft'&&field==='W'){ e.preventDefault(); focus('gt730K_'+i); }
 };
 /* يجمع كل سبائك 730 المُدخَلة: الحقل الرئيسي + الصفوف الإضافية */
 function _collectGT730Bars(){
@@ -875,7 +893,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v101';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v102';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
