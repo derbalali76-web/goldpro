@@ -811,14 +811,23 @@ window._addGT730Bar=(w,k)=>{
     const row=document.createElement('div'); row.id='gt730Row_'+i;
     row.style.cssText='display:flex;gap:.35rem;margin-bottom:.3rem;align-items:center';
     row.innerHTML=`
-        <input type="text" inputmode="decimal" id="gt730W_${i}" placeholder="وزن إضافي (غ)" value="${w!=null?w:''}" dir="ltr" oninput="liveNum(this);window.calcGTEq()"
+        <input type="text" inputmode="decimal" id="gt730W_${i}" placeholder="وزن إضافي (غ)" value="${w!=null?w:''}" dir="ltr" oninput="liveNum(this);window._gt730Auto();window.calcGTEq()"
             style="flex:2;padding:.4rem;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--t);font-family:Tajawal,sans-serif;font-size:.74rem;font-weight:800;text-align:right">
-        <input type="text" inputmode="numeric" id="gt730K_${i}" placeholder="العيار" value="${k!=null?k:730}" dir="ltr" oninput="window.calcGTEq()"
+        <input type="text" inputmode="numeric" id="gt730K_${i}" placeholder="العيار" value="${k!=null?k:''}" dir="ltr" oninput="window.calcGTEq()"
             style="flex:1;padding:.4rem;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--t);font-family:Tajawal,sans-serif;font-size:.74rem;font-weight:800;text-align:center">
         <button type="button" onclick="document.getElementById('gt730Row_${i}').remove();window.calcGTEq()"
             style="border:none;background:transparent;color:var(--rd);cursor:pointer;font-size:.9rem;padding:.1rem .3rem">🗑️</button>`;
     box.appendChild(row);
-    const wEl=document.getElementById('gt730W_'+i); if(wEl)wEl.focus();
+    const wEl=document.getElementById('gt730W_'+i); if(wEl&&w==null)wEl.focus();
+    return i;
+};
+/* يزيد سطراً تلقائياً عند ملء آخر سطر (لا اقتراح للعيار) */
+window._gt730Auto=()=>{
+    const rows=document.querySelectorAll('#gt730Bars [id^="gt730Row_"]');
+    if(!rows.length){ if(readNum('gtAmount')>0)_addGT730Bar(); return; }
+    const last=rows[rows.length-1];
+    const i=last.id.replace('gt730Row_','');
+    if(readNum('gt730W_'+i)>0)_addGT730Bar();   /* آخر سطر امتلأ → أضف جديداً */
 };
 /* يجمع كل سبائك 730 المُدخَلة: الحقل الرئيسي + الصفوف الإضافية */
 function _collectGT730Bars(){
@@ -866,7 +875,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v100';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v101';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -938,10 +947,17 @@ window.saveGT=()=>{
             dt,src:gtType==='take'?'استلام':'تسليم'
         };
     });
+    /* فاتورة قبض 730 للأرشيف (قابلة للتعديل) */
+    const gt730Inv=(gtType==='take'&&isG730&&gt730Bars&&gt730Bars.length)?{
+        id:'GT730-'+uid(), t:'gt730', c, dt:new Date().toLocaleDateString('fr-FR'),
+        items:gt730Bars.map(b=>({w:b.w,k:b.k,eq730:b.w*b.k/730})),
+        tw:totW, eq730:finalAmount, note
+    }:null;
     emitEvent('GT',
         {gtType,c,m,finalAmount,realW:isG730?totW:undefined,realK:isG730?(uniformK||730):undefined,note,barsAdd,barsRemove,barUpdates,takenBy:takenBy||undefined},
         {
             bars:Object.keys(dispBars).length?dispBars:undefined,
+            invoice:gt730Inv||undefined,
             op:{c,t:gtType==='give'?'أعطيت':'استلمت',m,a:finalAmount,
                 _ts:Date.now(),dt:nowStr,
                 ...(takenBy?{note:('أخذه: '+takenBy)+(note?(' · '+note):'')}:{}),
@@ -2948,7 +2964,19 @@ function renderArchive(){
     /* فواتير الشراء/البيع */
     const goldList=f==='buy'?invoices.filter(i=>i.t==='buy'):f==='sell'?invoices.filter(i=>i.t==='sell'):invoices;
     document.getElementById('archiveCount').textContent=goldList.length;
-    document.getElementById('archiveList').innerHTML=goldList.length?goldList.map(inv=>`
+    document.getElementById('archiveList').innerHTML=goldList.length?goldList.map(inv=>inv.t==='gt730'?`
+        <div class="saved-card">
+            <div>
+                <strong>${inv.c}</strong>
+                <span style="color:#7c3aed;font-weight:800;margin-right:.25rem">قبض 730</span>
+                <span style="color:var(--g600);font-weight:900">${fmt(inv.tw||0,2)} غ</span>
+                <small style="color:var(--t2);display:block">${inv.dt} · مكافئ 730: ${fmt(inv.eq730||0,2)}غ · ${(inv.items||[]).length} سبيكة</small>
+            </div>
+            <div style="display:flex;gap:.3rem">
+                <button class="btn-pdf" onclick="editGt730('${inv.id}')" style="background:rgba(124,58,237,.12);color:#7c3aed" title="تعديل"><i class="fas fa-pen"></i></button>
+                <button class="btndel" onclick="delInv('${inv.id}')"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>`:`
         <div class="saved-card">
             <div>
                 <strong>${inv.c}</strong>
@@ -3138,7 +3166,31 @@ window.waInv=(id)=>{
         .then(blob=>{ _showShareCard(blob,fname,`فاتورة ${inv.c}`); })
         .catch(e=>toast('❌ خطأ في توليد PDF: '+(e&&e.message||e),'error'));
 };
-/* delInv مُعرَّفة في invoice.js */
+/* تعديل فاتورة قبض 730: يحذف القديمة ويعيد فتح النموذج بقيمها */
+window.editGt730=(id)=>{
+    const evt=(typeof _allEvents!=='undefined'?_allEvents:[]).find(e=>e.display&&e.display.invoice&&e.display.invoice.id===id&&e.type!=='VOID');
+    if(!evt){toast('الفاتورة غير موجودة','error');return;}
+    const inv=evt.display.invoice, d=evt.data||{};
+    if(!confirm('سيُعاد فتح فاتورة قبض 730 للتعديل (تُحذف الحالية وتُعاد إضافتها بعد الحفظ). متابعة؟'))return;
+    /* أبطل الحدث القديم (يعيد السبائك للمخزون ويلغي الدين) */
+    emitEvent('VOID',{voids:evt.id},{});
+    try{ renderArchive(); updAll(); }catch(e){}
+    /* افتح نموذج الاستلام 730 وعبّئه */
+    openGiveTake('take');
+    document.getElementById('gtMetal').value='ذهب 730';
+    if(window.toggleGTKarat)window.toggleGTKarat();
+    document.getElementById('gtCustomer').value=inv.c||'';
+    const items=(inv.items||[]);
+    _gt730Cnt=0; const gb=document.getElementById('gt730Bars'); if(gb)gb.innerHTML='';
+    if(items.length){
+        document.getElementById('gtAmount').value=String(items[0].w).replace('.',',');
+        document.getElementById('gtKarat').value=items[0].k||730;
+        for(let j=1;j<items.length;j++)_addGT730Bar(items[j].w,items[j].k);
+    }
+    if(inv.note)document.getElementById('gtNote').value=inv.note;
+    if(window.calcGTEq)window.calcGTEq();
+    toast('عدّل القيم ثم احفظ — ستُنشأ فاتورة محدّثة','info');
+};
 /* علامة مائية (لوغو) باسم المستخدم الحالي — مشتركة لكل الفواتير */
 function _wmText(){ return ((typeof _currentUser!=='undefined'&&_currentUser)?_currentUser:(localStorage.getItem('gp12_user')||sessionStorage.getItem('gp12_user')||'')).toString(); }
 function _wmLayer(){

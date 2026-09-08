@@ -329,6 +329,8 @@ function _applyEvt(st,evt){
                     stUpdDebt(d.c,d.m,-d.finalAmount);
                 }
             }
+            /* فاتورة قبض 730 → الأرشيف */
+            if(disp.invoice)st.invoices.unshift(disp.invoice);
             /* سطر إضافيّ في سجلّ «من أخذه» */
             if(d.takenBy&&disp.op){
                 st.ops.push({
