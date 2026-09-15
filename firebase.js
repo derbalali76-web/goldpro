@@ -402,6 +402,15 @@ function _applyEvt(st,evt){
             break;
         }
 
+        case 'DUBAI_BUY':{
+            /* شراء دبي = عكس البيع في حساب المكتب فقط (لا يمسّ المخزون):
+               ذهب المكتب 24 يزيد (+w) ، ودولاره ينقص (−usd) */
+            stUpdDebt(d.o,'ذهب 24',d.w);
+            stUpdDebt(d.o,'دولار',-d.usd);
+            if(disp.dubaiInvoice)st.dubaiInvoices.unshift(disp.dubaiInvoice);
+            break;
+        }
+
         case 'INVOICE_BUY':{
             applyBars();
             st.B.دينار-=d.akhd;

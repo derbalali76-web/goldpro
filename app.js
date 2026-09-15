@@ -893,7 +893,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v102';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v104';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1108,7 +1108,7 @@ window.editDubInv=(id)=>{
     if(!confirm('تعديل عملية دبي؟ ستُحذف القديمة وتُفتح للتعديل، ثم احفظ.'))return;
     const snap=_invSnapshot('dubaiInvoice',id); if(!snap){toast('تعذّر التعديل','error');return;}
     _voidByInvId('dubaiInvoice',id);
-    openDubai();
+    openDubai(d.buy?'buy':'sell');
     document.getElementById('dubaiOffice').value=d.c||'';
     document.getElementById('dubaiWeight').value=d.w!=null?d.w:'';
     document.getElementById('dubaiPrice').value=d.sp!=null?d.sp:'';
@@ -1298,10 +1298,28 @@ window.saveExp=()=>{
 };
 
 /* ═══════════ DUBAI ═══════════ */
-window.openDubai=()=>{
+let _dubaiMode='sell';   /* 'sell' = بيع دبي · 'buy' = شراء دبي */
+window.openDubaiChoice=()=>{
+    const useAsk=(typeof ask_user_input_v0==='undefined');
+    /* نافذة اختيار بسيطة */
+    let m=document.getElementById('dubaiChoiceModal');
+    if(!m){m=document.createElement('div');m.id='dubaiChoiceModal';m.className='modal-overlay';document.body.appendChild(m);}
+    m.innerHTML=`<div class="modal-box" style="max-width:320px">
+        <div class="modal-header"><h3 style="font-size:.95rem">🏙️ دبي</h3><button class="close-btn" onclick="closeModal('dubaiChoiceModal')">✕</button></div>
+        <div style="padding:1rem;display:flex;flex-direction:column;gap:.7rem">
+            <button class="bg" style="padding:.9rem;font-size:1rem" onclick="closeModal('dubaiChoiceModal');openDubai('sell')">💰 بيع دبي</button>
+            <button class="btn-settle" style="padding:.9rem;font-size:1rem;background:rgba(16,185,129,.12);color:#059669;border-color:#059669" onclick="closeModal('dubaiChoiceModal');openDubai('buy')">🛒 شراء دبي</button>
+        </div></div>`;
+    m.classList.add('active');
+};
+window.openDubai=(mode)=>{
+    _dubaiMode=(mode==='buy')?'buy':'sell';
+    const t=document.getElementById('dubaiModalTitle');
+    if(t)t.textContent=_dubaiMode==='buy'?'🛒 شراء دبي':'💰 بيع دبي';
+    const btn=document.querySelector('#dubaiModal .bg');
+    if(btn)btn.textContent=_dubaiMode==='buy'?'🛒 شراء':'💾 ترحيل';
     try{ const _rf=document.getElementById('dubaiRate'); if(_rf&&!_rf.value){ const _lr=(dollInvoices.find(x=>x&&x.isBuy===false&&Number(x.r)>0)||{}).r||dollarSellRate||dollarRate; if(_lr)_rf.value=_lr; } }catch(e){}
     document.getElementById('dubaiOffice').value='';document.getElementById('dubaiWeight').value='';
-    /* تعبئة سعر الشاشة اللحظي تلقائياً */
     document.getElementById('dubaiPrice').value=liveSpotPrice>0?liveSpotPrice:'';
     document.getElementById('dubaiDisc').value='0';
     document.getElementById('dubaiTotal').textContent='💰 0 USD';
@@ -1708,6 +1726,23 @@ window.saveDubai=()=>{
     const disc=parseFloat(document.getElementById('dubaiDisc').value)||0;
     if(!o||isNaN(w)||w<=0||isNaN(sp)||sp<=0)return toast('تأكد من البيانات','error');
     const usd=Math.max(0,(sp-disc)*w/31.1035);
+    const did=(_dubaiMode==='buy'?'DUBB-':'DUB-')+uid();
+    const dt=new Date().toLocaleDateString('fr-FR');
+    const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    const _rateFld=parseFloat(String((document.getElementById('dubaiRate')||{}).value||'').replace(/\s/g,'').replace(',','.'));
+    const _sellRate=(isFinite(_rateFld)&&_rateFld>0)?_rateFld:((dollInvoices.find(x=>x&&x.isBuy===false&&Number(x.r)>0)||{}).r||dollarRate);
+
+    if(_dubaiMode==='buy'){
+        /* شراء دبي = عكس البيع في حساب المكتب فقط (لا يمسّ المخزون) */
+        const _dub={id:did,c:o,w,sp,disc,usd,dt,rate:_sellRate,buy:true};
+        emitEvent('DUBAI_BUY',
+            {o,w,sp,disc,usd,rate:_sellRate},
+            {dubaiInvoice:_dub,op:{c:o,t:'شراء دبي',m:'دولار',a:-usd,_ts:Date.now(),dt:nowStr,sentW:w,sp,disc,did,rate:_sellRate,buy:true}}
+        );
+        closeModal('dubaiModal');
+        toast('🛒 تمّ شراء دبي — زاد ذهب المكتب ونقص دولاره','success');
+        return;
+    }
     const _cur24=getCustBal(o,'ذهب 24');
     const fromDebt=Math.min(w,Math.max(0,_cur24));
     const fromInv=w-fromDebt;
@@ -1717,12 +1752,6 @@ window.saveDubai=()=>{
         const r=_pickBarsToRemove('24',fromInv);
         barsRemove=r.barsRemove;barUpdates=r.barUpdates;
     }
-    const did='DUB-'+uid();
-    const dt=new Date().toLocaleDateString('fr-FR');
-    const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    /* سعر الصرف: من الحقل إن مُلئ يدوياً، وإلا آخر «بيع دولار» */
-    const _rateFld=parseFloat(String((document.getElementById('dubaiRate')||{}).value||'').replace(/\s/g,'').replace(',','.'));
-    const _sellRate=(isFinite(_rateFld)&&_rateFld>0)?_rateFld:((dollInvoices.find(x=>x&&x.isBuy===false&&Number(x.r)>0)||{}).r||dollarRate);
     const _dub={id:did,c:o,w,sp,disc,usd,dt,rate:_sellRate};
     emitEvent('DUBAI',
         {o,w,sp,disc,usd,rate:_sellRate,fromDebt,fromInv,barsRemove,barUpdates},
@@ -3049,7 +3078,7 @@ function renderArchive(){
         <div class="saved-card">
             <div>
                 <strong>${d.c}</strong>
-                <span style="color:#0f766e;font-weight:800;margin-right:.25rem">🏙️ دبي</span>
+                <span style="color:${d.buy?'#059669':'#0f766e'};font-weight:800;margin-right:.25rem">${d.buy?'🛒 شراء دبي':'🏙️ بيع دبي'}</span>
                 <span style="color:var(--g600);font-weight:900">${fmt(d.usd||0,2)} $</span>
                 <small style="color:var(--t2);display:block">${d.dt} · ${fmt(d.w||0,2)} غ · شاشة ${fmt(d.sp||0,2)}${d.disc?' · خصم '+fmt(d.disc,2):''}</small>
                 ${_dubPGLine(d)}
