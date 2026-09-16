@@ -1,6 +1,7 @@
 /* ═══════════ RAFFINAGE ═══════════ */
 let rafRows=6;
 const _rafSentIds=new Set();
+let _rafSentBars=[];   /* سبائك أُرسلت من المخزون: {id,w,k} — مصدر موثوق مستقلّ عن الجدول */
 function rafInputRow(i){
     return`<tr>
         <td class="inv-rn">${i}</td>
@@ -113,6 +114,13 @@ window.saveSimpleRaf=()=>{
         const k=parseFloat(document.getElementById('rafK_'+i)?.value)||730;
         if(w>0){totalSentW+=w;totalSentEq24+=w*k/1000;totalSentEq730+=w*k/730;rows.push({w,k,pure:w*k/1000});}
     }
+    /* احتياط الهاتف: إن لم يُملأ الجدول لكن سبائك أُرسلت من المخزون → اعتمدها */
+    if(rows.length===0 && _rafSentBars && _rafSentBars.length){
+        _rafSentBars.forEach(b=>{
+            const w=Number(b.w)||0, k=Number(b.k)||730;
+            if(w>0){totalSentW+=w;totalSentEq24+=w*k/1000;totalSentEq730+=w*k/730;rows.push({w,k,pure:w*k/1000});}
+        });
+    }
     if(totalSentW<=0)return toast('أدخل وزن الكسر المرسل','error');
     const avail730=g730.reduce((s,b)=>s+(b.w||0),0);
     if(totalSentW>avail730+0.001)return toast(`⚠️ مخزون 730 غير كافٍ (متاح: ${fmt(avail730,2)} غ)`,'error');
@@ -140,21 +148,29 @@ window.saveSimpleRaf=()=>{
         const takePart=(bar,w)=>{used.add(bar.id);barUpdates730.push({id:bar.id,pool:'730',newW:parseFloat((bar.w-w).toFixed(4))});rem=parseFloat((rem-w).toFixed(4));};
         const kEq=(a,b)=>Math.round(a||730)===Math.round(b||730);
         const pool=pred=>g730.filter(b=>pred(b)&&!used.has(b.id));
-        /* ① مطابقة تامة (وزن+عيار) — المختارة أولاً ثم البقية */
+        /* ① مطابقة تامة (وزن+عيار) — المختارة أولاً ثم البقية (سماحية موسّعة) */
         rows.forEach(r=>{
-            let bar=pool(b=>_rafSentIds.has(b.id)&&Math.abs((b.w||0)-r.w)<0.005&&kEq(b.k,r.k))[0]
-                 ||pool(b=>Math.abs((b.w||0)-r.w)<0.005&&kEq(b.k,r.k))[0];
+            let bar=pool(b=>_rafSentIds.has(b.id)&&Math.abs((b.w||0)-r.w)<0.05&&kEq(b.k,r.k))[0]
+                 ||pool(b=>_rafSentIds.has(b.id)&&Math.abs((b.w||0)-r.w)<0.05)[0]
+                 ||pool(b=>Math.abs((b.w||0)-r.w)<0.05&&kEq(b.k,r.k))[0];
             if(bar){r._done=true;takeFull(bar);}
         });
         /* ② قصّ جزئي من سبيكة بنفس العيار تسع الوزن — المختارة أولاً */
         rows.forEach(r=>{
             if(r._done)return;
-            let bar=pool(b=>_rafSentIds.has(b.id)&&kEq(b.k,r.k)&&(b.w||0)>=r.w-0.005)[0]
-                 ||pool(b=>kEq(b.k,r.k)&&(b.w||0)>=r.w-0.005)[0];
+            let bar=pool(b=>_rafSentIds.has(b.id)&&kEq(b.k,r.k)&&(b.w||0)>=r.w-0.05)[0]
+                 ||pool(b=>_rafSentIds.has(b.id)&&(b.w||0)>=r.w-0.05)[0]
+                 ||pool(b=>kEq(b.k,r.k)&&(b.w||0)>=r.w-0.05)[0];
             if(bar){r._done=true;
-                if(Math.abs(bar.w-r.w)<0.005)takeFull(bar);else takePart(bar,r.w);
+                if(Math.abs(bar.w-r.w)<0.05)takeFull(bar);else takePart(bar,r.w);
             }
         });
+        /* شبكة أمان: أي سبيكة أُرسلت صراحةً (🔥) ولم تُستهلك بعد → احذفها (المستخدم اختارها) */
+        if(_rafSentIds.size){
+            g730.forEach(b=>{
+                if(_rafSentIds.has(b.id)&&!used.has(b.id)){ takeFull(b); }
+            });
+        }
         /* ③ حارس صارم: كل صفّ يجب أن يطابق سبيكة فعلية بعيارها ووزنها في المخزون */
         const _unmatched=rows.filter(r=>!r._done);
         if(_unmatched.length){
@@ -189,6 +205,7 @@ window.saveSimpleRaf=()=>{
 };
 window.resetRafForm=()=>{
     _rafSentIds.clear();
+    _rafSentBars=[];
     document.getElementById('rafCustomer').value='';
     const _rbb=document.getElementById('rafBalBox');if(_rbb)_rbb.style.display='none';
     initRafTable();

@@ -174,6 +174,7 @@ window.sendBarToRaf=(type,id)=>{
     if(typeof calcRaf==='function')calcRaf();
     /* تسجيل الـ ID لمنع الإضافة مرة ثانية */
     _rafSentIds.add(id);
+    if(typeof _rafSentBars!=='undefined'&&!_rafSentBars.some(x=>x.id===id))_rafSentBars.push({id:bar.id,w:bar.w,k:bar.k||730});
     renderInvModal();
     /* رسالة تأكيد — بدون إغلاق المودال أو التنقل */
     toast(`🔥 أُضيفت للرافيناج — الصف ${targetRow}`,'success');
