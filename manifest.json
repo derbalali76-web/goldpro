@@ -55,7 +55,8 @@
     }
   ],
   "display_override": [
-    "standalone",
-    "fullscreen"
-  ]
+    "standalone"
+  ],
+  "id": "/goldpro/",
+  "prefer_related_applications": false
 }
