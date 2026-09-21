@@ -1,5 +1,5 @@
 /* sw.js — Network-First مع Cache offline */
-const CACHE = 'goldpro-v106';
+const CACHE = 'goldpro-v107';
 const ASSETS = [
   './',
   './index.html',
@@ -47,11 +47,24 @@ self.addEventListener('activate', e => {
   );
 });
 
-/* الطلبات: Network-First → إذا فشل الإنترنت يُقرأ من الكاش */
+/* الطلبات: الخطوط الخارجية تُخزَّن (cache-first) لتعمل بلا إنترنت */
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  /* فقط نفس النطاق (لا Firebase ولا CDN) */
+  /* خطوط Google + Font Awesome: خزّنها وقدّمها من الكاش (تعمل أوفلاين بعد أول تحميل) */
+  if (url.hostname.indexOf('fonts.googleapis.com') !== -1
+   || url.hostname.indexOf('fonts.gstatic.com') !== -1
+   || url.hostname.indexOf('cdnjs.cloudflare.com') !== -1) {
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return res;
+      }).catch(() => cached))
+    );
+    return;
+  }
+  /* بقية الطلبات: نفس النطاق فقط (Network-First) */
   if (url.origin !== self.location.origin) return;
   e.respondWith(
     fetch(e.request)
