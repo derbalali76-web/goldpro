@@ -11,15 +11,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#01406c">
     <title>Calculator</title>
-    <link rel="manifest" href="manifest.json?v=108">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=108">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=108">
+    <link rel="manifest" href="manifest.json?v=110">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=110">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=110">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/icon-180.png?v=108">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=108">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png?v=108">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=108">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png?v=108">
+    <link rel="apple-touch-icon" href="icons/icon-180.png?v=110">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=110">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png?v=110">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=110">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png?v=110">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -58,7 +58,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=108">
+    <link rel="stylesheet" href="./style.css?v=110">
 </head>
 <body>
 <!-- ═══════════ قناع الآلة الحاسبة (تصميم فاتح · الكود 0505 يكشف التطبيق) ═══════════ -->
@@ -232,6 +232,12 @@
                     <span class="cl">دولار</span>
                     <span class="cv" id="usdBal">0<small> USD</small></span>
                 </div>
+                <div class="bcard bcard-eur" id="euroCard" style="display:none">
+                    <div class="bcard-accent" style="background:#2563eb"></div>
+                    <div class="ci" style="color:#2563eb"><i class="fas fa-euro-sign"></i></div>
+                    <span class="cl">أورو</span>
+                    <span class="cv" id="eurBal">0<small> EUR</small></span>
+                </div>
             </div>
             <div class="qgrid">
                 <div class="qcard give" onclick="openGiveTake('give')">
@@ -246,6 +252,8 @@
             <div class="astrip">
                 <button class="btn buy"  onclick="openDollar('buy')"> <i class="fas fa-cart-plus"></i>شراء $</button>
                 <button class="btn sell" onclick="openDollar('sell')"><i class="fas fa-tag"></i>بيع $</button>
+                <button class="btn buy"  onclick="openEuro('buy')" style="background:linear-gradient(135deg,#1e40af,#2563eb)"> <i class="fas fa-cart-plus"></i>شراء €</button>
+                <button class="btn sell" onclick="openEuro('sell')" style="background:linear-gradient(135deg,#1e40af,#3b82f6)"><i class="fas fa-tag"></i>بيع €</button>
                 <button class="btn ship" onclick="openShipping()">   <i class="fas fa-ship"></i>شحن</button>
                 <button class="btn exp"  onclick="openExpense()">    <i class="fas fa-receipt"></i>مصاريف</button>
                 <button class="btn dubai" onclick="openDubaiChoice()">     <i class="fas fa-city"></i>دبي</button>
@@ -524,7 +532,7 @@
                 <button onclick="exportDebtsPdf()" style="background:var(--rd);color:#fff;border:none;border-radius:8px;padding:.35rem .75rem;font-size:.78rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:.3rem"><i class="fas fa-file-pdf"></i> تصدير PDF</button>
             </div>
             <div class="tbl"><div class="tbl-scroll">
-                <table><thead><tr>
+                <table><thead><tr id="debtsHeaderRow">
                     <th>الزبون</th><th>💵 دينار</th><th>💲 دولار</th><th>👑 730</th><th>💎 24</th><th>إجراء</th>
                 </tr></thead><tbody id="debtsBody"></tbody></table>
             </div></div>
@@ -980,13 +988,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=108"></script>
-<script src="./app.js?v=108"></script>
-<script src="./assistant.js?v=108"></script>
-<script src="./inventory.js?v=108"></script>
-<script src="./invoice.js?v=108"></script>
-<script src="./raffinage.js?v=108"></script>
-<script src="./auth.js?v=108"></script>
+<script src="./firebase.js?v=110"></script>
+<script src="./app.js?v=110"></script>
+<script src="./assistant.js?v=110"></script>
+<script src="./inventory.js?v=110"></script>
+<script src="./invoice.js?v=110"></script>
+<script src="./raffinage.js?v=110"></script>
+<script src="./auth.js?v=110"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->

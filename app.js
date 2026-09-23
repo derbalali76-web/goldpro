@@ -2,6 +2,7 @@
 let B={دينار:0,'ذهب 730':0,'ذهب 24':0,دولار:0,vg730:0,vg24:0};
 let ops=[],invoices=[],debts=[],loans=[],rafInvoices=[],dollInvoices=[],dubaiInvoices=[];
 let goldPrice=12500,dollarRate=24800,dollarSellRate=0,dollarBuyRate=0,liveSpotPrice=0;
+let euroRate=26500,euroSellRate=0,euroBuyRate=0;
 let g24=[],g730=[];
 let invItems=[],currentRafBars=[];
 let targetBar=null,targetBarType=null;
@@ -718,6 +719,10 @@ function upd(){
     document.getElementById('g730Bal').innerHTML=fmt(B['ذهب 730']+(B.vg730||0),2)+'<small> g</small>';
     document.getElementById('g24Bal').innerHTML=fmt(B['ذهب 24']+(B.vg24||0),2)+'<small> g</small>';
     document.getElementById('usdBal').innerHTML=fmt(B.دولار,0)+'<small> USD</small>';
+    /* بطاقة اليورو: تظهر فقط إن كان الرصيد غير صفر */
+    const _euEl=document.getElementById('eurBal'), _euCard=document.getElementById('euroCard');
+    if(_euEl)_euEl.innerHTML=fmt(B['أورو']||0,0)+'<small> EUR</small>';
+    if(_euCard)_euCard.style.display=(Math.abs(B['أورو']||0)>0.001)?'':'none';
     const _bk=_netBuckets();
     /* ذهب البيع: مجموع 730 + 24 محوّل لعيار 730 */
     const _gst=document.getElementById('goldSaleTotal');
@@ -893,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v108';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v110';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1030,17 +1035,21 @@ window.showDollarBalance=()=>{
     box.innerHTML=html;
     box.style.display='block';
 };
-window.openDollar=(t,prefillCust)=>{
-    document.getElementById('dollarTitle').textContent=t==='buy'?'💲 شراء دولار':'💲 بيع دولار';
+let _curCur='دولار';   /* العملة الحالية في نافذة العملة: دولار أو أورو */
+window.openDollar=(t,prefillCust,cur)=>{
+    _curCur=(cur==='أورو')?'أورو':'دولار';
+    const sym=_curCur==='أورو'?'€':'$';
+    const rate=_curCur==='أورو'?(euroRate||0):(dollarRate||0);
+    document.getElementById('dollarTitle').textContent=(t==='buy'?'شراء ':'بيع ')+_curCur+' '+sym;
     document.getElementById('dollarCustomer').value=prefillCust||'';
     document.getElementById('dollarAmount').value='';
-    document.getElementById('dollarRate').value=dollarRate;
+    document.getElementById('dollarRate').value=rate;
     document.getElementById('dollarParty').value='';
-    document.getElementById('dollarParty').placeholder=t==='buy'?'👤 من أخذه (اختياري)':'👤 المسلم — من أعطاك الدولار (اختياري)';
+    document.getElementById('dollarParty').placeholder=t==='buy'?'👤 من أخذه (اختياري)':('👤 المسلم — من أعطاك '+_curCur+' (اختياري)');
     document.getElementById('dollarBalBox').style.display='none';
     document.getElementById('dinarEq').textContent='= 0 DZD';
     document.getElementById('dollPaidInfo').style.display='none';
-    _dollPaid=true; /* إعادة ضبط لخالص */
+    _dollPaid=true;
     setDollPaid(true);
     document.getElementById('dollarModal').classList.add('active');
     if(prefillCust&&typeof showDollarBalance==='function'){try{showDollarBalance();}catch(e){}}
@@ -1049,22 +1058,26 @@ window.openDollar=(t,prefillCust)=>{
 window.saveDollar=()=>{
     const c=document.getElementById('dollarCustomer').value.trim();
     const a=readNum('dollarAmount');
-    const r=readNum('dollarRate')||dollarRate;
+    const _defRate=_curCur==='أورو'?(euroRate||0):(dollarRate||0);
+    const r=readNum('dollarRate')||_defRate;
     const party=document.getElementById('dollarParty').value.trim();
     if(!c||isNaN(a)||a<=0)return toast('تأكد من البيانات','error');
     const isBuy=document.getElementById('dollarTitle').textContent.includes('شراء');
     const paid=_dollPaid;
     const dinarVal=a*r/100;
     if(isBuy&&paid&&B.دينار<dinarVal-0.001)return toast('⚠️ رصيد الدينار غير كافٍ','error');
-    if(!isBuy&&B.دولار<a-0.001&&!party)return toast('⚠️ رصيد الدولار غير كافٍ','error');
-    dollarRate=r; if(!isBuy)dollarSellRate=r; else dollarBuyRate=r; /* دبي=آخر بيع · شحن=آخر شراء */ save();
+    if(!isBuy&&(B[_curCur]||0)<a-0.001&&!party)return toast('⚠️ رصيد '+_curCur+' غير كافٍ','error');
+    /* حدّث سعر العملة المناسبة */
+    if(_curCur==='أورو'){ euroRate=r; if(!isBuy)euroSellRate=r; else euroBuyRate=r; }
+    else { dollarRate=r; if(!isBuy)dollarSellRate=r; else dollarBuyRate=r; }
+    save();
     const did='DOLL-'+uid();
     const dt=new Date().toLocaleDateString('fr-FR');
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    const _di={id:did,c,party,isBuy,paid,a,r,dinar:dinarVal,dt};
+    const _di={id:did,c,party,isBuy,paid,a,r,dinar:dinarVal,dt,cur:_curCur};
     emitEvent('DOLLAR',
-        {c,isBuy,paid,a,r,dinarVal,party},
-        {dollInvoice:_di,op:{c,t:isBuy?'شراء دولار':'بيع دولار',m:'دولار',a,_ts:Date.now(),dt:nowStr,dr:r,party,paid,did}}
+        {c,isBuy,paid,a,r,dinarVal,party,cur:_curCur},
+        {dollInvoice:_di,op:{c,t:(isBuy?'شراء ':'بيع ')+_curCur,m:_curCur,a,_ts:Date.now(),dt:nowStr,dr:r,party,paid,did,cur:_curCur}}
     );
     window._editRestore=null;
     document.getElementById('dollarCustomer').value='';
@@ -1072,9 +1085,9 @@ window.saveDollar=()=>{
     document.getElementById('dollarParty').value='';
     document.getElementById('dollarBalBox').style.display='none';
     closeModal('dollarModal');
-    toast(paid?'✅ تمت عملية الدولار (خالص)':'📋 تمت عملية الدولار (غير خالص — أُضيفت للديون)');
-    /* تنزيل تلقائي مُلغى — اعرض من الأرشيف 👁 */
+    toast(paid?('✅ تمت عملية '+_curCur+' (خالص)'):('📋 تمت عملية '+_curCur+' (غير خالص — أُضيفت للديون)'));
 };
+window.openEuro=(t,prefillCust)=>openDollar(t,prefillCust,'أورو');
 document.getElementById('dollarAmount').addEventListener('input',_updDollarEq);
 document.getElementById('dollarRate').addEventListener('input',_updDollarEq);
 
@@ -2156,9 +2169,17 @@ function renderDebts(){
     if(!debts.length){tb.innerHTML='<tr><td colspan="6" style="padding:2rem;color:var(--t3)"><i class="fas fa-check-circle" style="color:var(--gr)"></i> لا توجد ديون</td></tr>';return}
     const cd={};
     debts.forEach(d=>{
-        if(!cd[d.c])cd[d.c]={di:0,do:0,g7:0,g2:0};
-        cd[d.c][d.type==='دينار'?'di':d.type==='دولار'?'do':d.type==='ذهب 730'?'g7':'g2']+=(d.a||0);
+        if(!cd[d.c])cd[d.c]={di:0,do:0,eu:0,g7:0,g2:0};
+        const k=d.type==='دينار'?'di':d.type==='دولار'?'do':d.type==='أورو'?'eu':d.type==='ذهب 730'?'g7':d.type==='ذهب 24'?'g2':null;
+        if(k)cd[d.c][k]+=(d.a||0);
     });
+    /* عمود اليورو يظهر فقط إن وُجد زبون له رصيد يورو */
+    const _hasEuro=Object.values(cd).some(v=>Math.abs(v.eu)>0.001);
+    /* حدّث ترويسة الجدول (إظهار/إخفاء عمود اليورو) */
+    try{
+        const hdr=document.getElementById('debtsHeaderRow');
+        if(hdr)hdr.innerHTML=`<th>الزبون</th><th>💵 دينار</th><th>💲 دولار</th>${_hasEuro?'<th>💶 أورو</th>':''}<th>👑 730</th><th>💎 24</th><th>إجراء</th>`;
+    }catch(e){}
     /* وقت آخر معاملة لكل زبون (من سجلّ العمليات) للترتيب */
     const lastTx={};
     ops.forEach(o=>{ if(o&&o.c){ const t=o._ts||0; if(t>(lastTx[o.c]||0)) lastTx[o.c]=t; } });
@@ -2174,7 +2195,7 @@ function renderDebts(){
         })
         .map(([n,v])=>`<tr>
             <td><strong onclick="showCustomerLog('${n.replace(/'/g,"\\'")}')" style="cursor:pointer;color:var(--g600);text-decoration:underline;text-underline-offset:3px">${n}</strong></td>
-            <td>${fD(v.di,0,'Da')}</td><td>${fD(v.do,2,'$')}</td>
+            <td>${fD(v.di,0,'Da')}</td><td>${fD(v.do,2,'$')}</td>${_hasEuro?`<td>${fD(v.eu,2,'€')}</td>`:''}
             <td>${fD(v.g7,2,'غ (730)')}</td><td>${fD(v.g2,2,'غ (24)')}</td>
             <td><button class="btn-settle" onclick="openSettle('${n.replace(/'/g,"\\'")}')">✅ تصفية</button></td>
         </tr>`).join('');
@@ -2237,11 +2258,11 @@ window.openSettle=(name)=>{
 };
 function _renderSettleRows(){
     const rows=document.getElementById('settleRows');
-    const cd={دينار:0,دولار:0,'ذهب 730':0,'ذهب 24':0};
+    const cd={دينار:0,دولار:0,'أورو':0,'ذهب 730':0,'ذهب 24':0};
     debts.filter(d=>d.c===_settleCustomer).forEach(d=>{cd[d.type]=(cd[d.type]||0)+(d.a||0)});
-    const icons={دينار:'💵',دولار:'💲','ذهب 730':'👑','ذهب 24':'💎'};
-    const units={دينار:'دج',دولار:'$','ذهب 730':'غ','ذهب 24':'غ'};
-    const decs={دينار:0,دولار:2,'ذهب 730':2,'ذهب 24':2};
+    const icons={دينار:'💵',دولار:'💲','أورو':'💶','ذهب 730':'👑','ذهب 24':'💎'};
+    const units={دينار:'دج',دولار:'$','أورو':'€','ذهب 730':'غ','ذهب 24':'غ'};
+    const decs={دينار:0,دولار:2,'أورو':2,'ذهب 730':2,'ذهب 24':2};
     const active=Object.entries(cd).filter(([,v])=>Math.abs(v)>0.001);
     const buyGoldBox=`<div style="margin-top:.7rem;padding-top:.7rem;border-top:1px dashed var(--border)">
         <div style="font-size:.72rem;color:var(--t3);margin-bottom:.4rem">🛒 شراء ذهب من الزبون (حتى بلا رصيد):</div>
@@ -2266,9 +2287,10 @@ function _renderSettleRows(){
         const dir=val>0?'تسالو':'يسالك';
         const isGold=type==='ذهب 730'||type==='ذهب 24';
         const isDollar=type==='دولار';
+        const isEuro=type==='أورو';
         /* الدولار يتكيّف كالذهب: أحمر (سالب)=شراء · أخضر (موجب)=بيع */
         const btnLabel=(isGold||isDollar)?(val<0?'🛒 شراء':'💰 بيع'):'صفّي';
-        const mainBtnClick=isDollar?'_openDollarSettleModal(false)':`settleOne('${type}')`;
+        const mainBtnClick=isDollar?'_openDollarSettleModal(false)':isEuro?'_openDollarSettleModal(false,"أورو")':`settleOne('${type}')`;
         /* أزرار التسوية الإضافية للذهب */
         const extraBtn=type==='ذهب 730'
             ?`<button class="btn-settle" style="background:rgba(217,119,6,.12);color:#d97706;border-color:#d97706;font-size:.72rem;padding:.3rem .5rem" onclick="settle730With24()">🔄 بـ24</button>`
@@ -2644,18 +2666,20 @@ window._gsmConfirm=function(){
 };
 
 /* ═══════════ تصفية الدولار (بيع/شراء) — بنفس آلية ذهب 730 ═══════════ */
-let _dsNet=0,_dsCustomer='',_dsForceBuy=false;
-function _openDollarSettleModal(forceBuy){
-    const net=debts.filter(x=>x.c===_settleCustomer&&x.type==='دولار').reduce((s,x)=>s+(x.a||0),0);
-    if(Math.abs(net)<0.001&&!forceBuy){toast('لا يوجد رصيد دولار','info');return;}
+let _dsNet=0,_dsCustomer='',_dsForceBuy=false,_dsCur='دولار';
+function _openDollarSettleModal(forceBuy,cur){
+    _dsCur=(cur==='أورو')?'أورو':'دولار';
+    const sym=_dsCur==='أورو'?'€':'$';
+    const net=debts.filter(x=>x.c===_settleCustomer&&x.type===_dsCur).reduce((s,x)=>s+(x.a||0),0);
+    if(Math.abs(net)<0.001&&!forceBuy){toast('لا يوجد رصيد '+_dsCur,'info');return;}
     _ensureDollarSettleModal();
     _dsNet=net; _dsCustomer=_settleCustomer; _dsForceBuy=!!forceBuy;
     const isBuy=forceBuy?true:(net<0);
     const icon=isBuy?'🛒':'💰', action=isBuy?'شراء':'بيع';
-    document.getElementById('dsmTitle').textContent=`${icon} ${action} دولار — ${_settleCustomer}`;
-    document.getElementById('dsmQty').textContent=(forceBuy&&Math.abs(net)<0.001)?'شراء حر':fmt(Math.abs(net),2)+' $';
+    document.getElementById('dsmTitle').textContent=`${icon} ${action} ${_dsCur} — ${_settleCustomer}`;
+    document.getElementById('dsmQty').textContent=(forceBuy&&Math.abs(net)<0.001)?'شراء حر':fmt(Math.abs(net),2)+' '+sym;
     document.getElementById('dsmPartialW').value=(forceBuy&&Math.abs(net)<0.001)?'':Math.abs(net).toString().replace('.',',');
-    document.getElementById('dsmRate').value=dollarRate;
+    document.getElementById('dsmRate').value=_dsCur==='أورو'?(euroRate||0):dollarRate;
     document.getElementById('dsmTotalBox').style.display='none';
     const p=document.getElementById('dsmDirPreview'); if(p)p.innerHTML='';
     document.getElementById('dollarSettleModal').classList.add('active');
@@ -2697,14 +2721,15 @@ window._dsmConfirm=function(){
     const cashTotal=_dsForceBuy?-total:(isBuy?-total:total);
     const settledAmt=isBuy?-w:w;
     const remaining=parseFloat((Math.abs(net)-w).toFixed(2));
+    const sym=_dsCur==='أورو'?'€':'$';
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     emitEvent('SETTLE_DOLLAR',
-        {c,net,isBuy,cashTotal,remaining,w,rate,iid,freeBuy:_dsForceBuy},
-        {op:{c,t:_dsForceBuy?'شراء دولار':'تصفية دولار',m:'دولار',a:settledAmt,_ts:Date.now(),dt:nowStr,cashSettle:true,cashTotal,partial:remaining>0.001}}
+        {c,net,isBuy,cashTotal,remaining,w,rate,iid,freeBuy:_dsForceBuy,cur:_dsCur},
+        {op:{c,t:_dsForceBuy?('شراء '+_dsCur):('تصفية '+_dsCur),m:_dsCur,a:settledAmt,_ts:Date.now(),dt:nowStr,cashSettle:true,cashTotal,partial:remaining>0.001,cur:_dsCur}}
     );
     closeModal('dollarSettleModal');
     if(typeof _renderSettleRows==='function')_renderSettleRows();
-    toast(remaining>0.001?`✅ صُفّي ${fmt(w,2)}$ — الباقي: ${fmt(remaining,2)}$`:`✅ تمّت تصفية الدولار`,'success');
+    toast(remaining>0.001?`✅ صُفّي ${fmt(w,2)}${sym} — الباقي: ${fmt(remaining,2)}${sym}`:`✅ تمّت تصفية ${_dsCur}`,'success');
 };
 function _ensureDollarSettleModal(){
     if(document.getElementById('dollarSettleModal'))return;
