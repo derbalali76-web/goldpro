@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v110';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v111';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -2074,7 +2074,7 @@ function buildCustomerLogHtml(c,custOps){
         const detailHtml=dlines.length
             ?`<div style="margin-top:4px;font-size:10px;color:#555;line-height:1.7;border-top:1px dashed #d1d5db;padding-top:3px">${
                 dlines.map(l=>`<span style="display:block">${l}</span>`).join('')}</div>`:'';
-        return`<tr style="background:${bg}">
+        return`<tr style="background:${bg};cursor:pointer" onclick="_showRowBal('${(c||'').replace(/'/g,"\\'")}','${(o.id||'').replace(/'/g,"\\'")}')" title="اضغط: الرصيد حتى هذا السطر">
             <td style="padding:7px 5px;text-align:center;color:#9ca3af;font-size:12px;border-bottom:1px solid #e5e7eb">${custOps.length-i}</td>
             <td style="padding:7px 6px;font-size:11px;color:#374151;border-bottom:1px solid #e5e7eb;white-space:nowrap">${o.dt||'—'}</td>
             <td style="padding:7px 6px;font-size:12px;font-weight:700;color:${tc};border-bottom:1px solid #e5e7eb">${o.t||'—'}</td>
@@ -3985,4 +3985,65 @@ window._shareCustLog=(name)=>{
         if(sel){ sel.value=name; if(typeof sendCustomerLogWA==='function'){ sendCustomerLogWA(); return; } if(typeof sendCustomerLog==='function'){ sendCustomerLog(); return; } }
     }catch(e){}
     toast('استعمل قسم «إرسال السجلّ» من القائمة','info');
+};
+
+/* ═══════════ رصيد الزبون حتى معاملة معيّنة (إعادة إسقاط الأحداث حتى صاحبها) ═══════════ */
+/* دقّة مضمونة: يعيد بناء الحالة بنفس _applyEvt حتى الحدث الذي أنتج هذه المعاملة (شامل). */
+window._custBalUpTo=(name,opId)=>{
+    try{
+        const _ev=(typeof _allEvents!=='undefined')?_allEvents:[];
+        /* أعد بناء مجموعة الأحداث الحيّة (نفس منطق _reproject) */
+        const voided=(typeof window._voidedTargetIds!=='undefined'&&window._voidedTargetIds)?window._voidedTargetIds:new Set();
+        const live=_ev.filter(e=>e.type!=='VOID'&&!voided.has(e.id))
+            .sort((a,b)=>((a.ts||0)-(b.ts||0))||String(a.id).localeCompare(String(b.id)));
+        /* الحدث المالك: op.id === evt.id أو يبدأ بـ evt.id+'_' (أسطر مشتقّة) */
+        const baseId=String(opId||'').split('_')[0]||opId;
+        let cutIdx=-1;
+        for(let i=0;i<live.length;i++){
+            if(live[i].id===opId||live[i].id===baseId||String(opId||'').indexOf(live[i].id)===0){ cutIdx=i; }
+        }
+        if(cutIdx<0)cutIdx=live.length-1;
+        /* حالة جديدة مؤقتة ثم طبّق حتى الحدث المالك (شامل) */
+        const st={
+            B:{دينار:0,دولار:0,'أورو':0,'ذهب 730':0,'ذهب 24':0,vg730:0,vg24:0},
+            g730:[],g24:[],debts:[],loans:[],
+            ops:[],invoices:[],dollInvoices:[],rafInvoices:[],dubaiInvoices:[]
+        };
+        for(let i=0;i<=cutIdx;i++){ try{ _applyEvt(st,live[i]); }catch(e){} }
+        /* اقرأ أرصدة هذا الزبون */
+        const bal={};
+        ['دينار','دولار','أورو','ذهب 730','ذهب 24'].forEach(m=>{
+            bal[m]=st.debts.filter(d=>d.c===name&&d.type===m).reduce((s,d)=>s+(d.a||0),0);
+        });
+        return bal;
+    }catch(e){ return null; }
+};
+/* نافذة «الرصيد حتى هذا السطر» */
+window._showRowBal=(name,opId)=>{
+    const bal=_custBalUpTo(name,opId); if(!bal){toast('تعذّر الحساب','error');return;}
+    const op=(ops||[]).find(o=>String(o.id)===String(opId))||{};
+    const _units={دينار:'دج',دولار:'$','أورو':'€','ذهب 730':'غ','ذهب 24':'غ'};
+    const _dec={دينار:0,دولار:2,'أورو':2,'ذهب 730':2,'ذهب 24':2};
+    const line=(m)=>{
+        const v=bal[m]||0;
+        if(m==='أورو'&&Math.abs(v)<0.001)return '';   /* أخفِ اليورو إن كان صفراً */
+        const owed=v>0.001, his=v<-0.001;
+        const col=owed?'#dc2626':his?'#16a34a':'#9ca3af';
+        const lbl=owed?'(عليه)':his?'(له)':'(صافٍ)';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem .2rem;border-bottom:1px solid var(--border)">
+            <span style="font-weight:900;font-size:.9rem">${m}</span>
+            <span style="font-weight:900;font-size:.95rem;color:${col}">${fmt(Math.abs(v),_dec[m])} ${_units[m]} <span style="font-size:.72rem;font-weight:700">${lbl}</span></span>
+        </div>`;
+    };
+    const body=['دينار','دولار','ذهب 730','ذهب 24','أورو'].map(line).join('');
+    let m=document.getElementById('rowBalModal');
+    if(!m){m=document.createElement('div');m.id='rowBalModal';m.className='modal-overlay';document.body.appendChild(m);}
+    m.innerHTML=`<div class="modal-box" style="max-width:400px">
+        <div style="padding:1rem;direction:rtl;text-align:right">
+            <div style="font-size:1.05rem;font-weight:900;margin-bottom:.15rem">📊 الرصيد حتى هذا السطر</div>
+            <div style="font-size:.72rem;color:var(--t3);margin-bottom:.7rem">${op.dt||''} · ${op.t||'معاملة'} · ${name}</div>
+            ${body}
+            <button class="bg" style="width:100%;padding:.7rem;font-size:.9rem;margin-top:.8rem" onclick="closeModal('rowBalModal')">إغلاق</button>
+        </div></div>`;
+    m.classList.add('active');
 };
