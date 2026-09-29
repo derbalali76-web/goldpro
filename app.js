@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v112';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v113';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -4038,12 +4038,15 @@ window._showRowBal=(name,opId)=>{
     const body=['دينار','دولار','ذهب 730','ذهب 24','أورو'].map(line).join('');
     let m=document.getElementById('rowBalModal');
     if(!m){m=document.createElement('div');m.id='rowBalModal';m.className='modal-overlay';document.body.appendChild(m);}
+    /* فوق نافذة سجل الزبون (z-index:99999) */
+    m.style.zIndex='100005';
+    m.onclick=(e)=>{ if(e.target===m)m.classList.remove('active'); };
     m.innerHTML=`<div class="modal-box" style="max-width:400px">
         <div style="padding:1rem;direction:rtl;text-align:right">
             <div style="font-size:1.05rem;font-weight:900;margin-bottom:.15rem">📊 الرصيد حتى هذا السطر</div>
             <div style="font-size:.72rem;color:var(--t3);margin-bottom:.7rem">${op.dt||''} · ${op.t||'معاملة'} · ${name}</div>
             ${body}
-            <button class="bg" style="width:100%;padding:.7rem;font-size:.9rem;margin-top:.8rem" onclick="closeModal('rowBalModal')">إغلاق</button>
+            <button class="bg" style="width:100%;padding:.7rem;font-size:.9rem;margin-top:.8rem" onclick="document.getElementById('rowBalModal').classList.remove('active')">إغلاق</button>
         </div></div>`;
     m.classList.add('active');
 };
