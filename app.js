@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v115';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v116';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1757,18 +1757,10 @@ window.saveDubai=()=>{
         toast('🛒 تمّ شراء دبي — زاد ذهب المكتب ونقص دولاره','success');
         return;
     }
-    const _cur24=getCustBal(o,'ذهب 24');
-    const fromDebt=Math.min(w,Math.max(0,_cur24));
-    const fromInv=w-fromDebt;
-    let barsRemove=[],barUpdates=[];
-    if(fromInv>0.001){
-        if(B['ذهب 24']<fromInv-0.001)return toast('⚠️ مخزون 24 أو دين المكتب غير كافٍ','error');
-        const r=_pickBarsToRemove('24',fromInv);
-        barsRemove=r.barsRemove;barUpdates=r.barUpdates;
-    }
+    /* بيع دبي لا يمسّ المخزون: الوزن كلّه يُضاف لرصيد ذهب المكتب (+w) */
     const _dub={id:did,c:o,w,sp,disc,usd,dt,rate:_sellRate};
     emitEvent('DUBAI',
-        {o,w,sp,disc,usd,rate:_sellRate,fromDebt,fromInv,barsRemove,barUpdates},
+        {o,w,sp,disc,usd,rate:_sellRate},
         {dubaiInvoice:_dub,op:{c:o,t:'بيع دبي',m:'دولار',a:usd,_ts:Date.now(),dt:nowStr,sentW:w,sp,disc,did,rate:_sellRate}}
     );
     window._editRestore=null;
