@@ -396,9 +396,8 @@ function _applyEvt(st,evt){
         }
 
         case 'DUBAI':{
-            /* بيع دبي: الوزن كلّه يُضاف لرصيد ذهب المكتب (+w) ولا يمسّ المخزون إطلاقاً.
-               أخضر(−) + بيع يقلبه نحو أحمر(+). الدولار يُضاف للمكتب كما هو. */
-            stUpdDebt(d.o,'ذهب 24',(d.w!=null?d.w:((d.fromDebt||0)+(d.fromInv||0))));
+            if(d.fromDebt>0.001)stUpdDebt(d.o,'ذهب 24',-d.fromDebt);
+            applyBars();
             stUpdDebt(d.o,'دولار',d.usd);
             if(disp.dubaiInvoice)st.dubaiInvoices.unshift(disp.dubaiInvoice);
             break;
