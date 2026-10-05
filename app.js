@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v113';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v114';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1752,6 +1752,7 @@ window.saveDubai=()=>{
             {o,w,sp,disc,usd,rate:_sellRate},
             {dubaiInvoice:_dub,op:{c:o,t:'شراء دبي',m:'دولار',a:-usd,_ts:Date.now(),dt:nowStr,sentW:w,sp,disc,did,rate:_sellRate,buy:true}}
         );
+        window._editRestore=null;   /* امسح استعادة التعديل حتى لا تُستعاد الفاتورة القديمة */
         closeModal('dubaiModal');
         toast('🛒 تمّ شراء دبي — زاد ذهب المكتب ونقص دولاره','success');
         return;
