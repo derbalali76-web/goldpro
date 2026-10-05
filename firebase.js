@@ -356,15 +356,16 @@ function _applyEvt(st,evt){
         }
 
         case 'DOLLAR':{
+            const _cur=d.cur||'دولار';   /* دولار أو أورو */
             if(d.isBuy){
-                if(d.party)stUpdDebt(d.party,'دولار',d.a);else st.B.دولار+=d.a;
+                if(d.party)stUpdDebt(d.party,_cur,d.a);else st.B[_cur]=(st.B[_cur]||0)+d.a;
                 if(d.paid)st.B.دينار-=d.dinarVal;else stUpdDebt(d.c,'دينار',-d.dinarVal);
             }else{
                 if(d.paid){
-                    if(d.party)stUpdDebt(d.party,'دولار',-d.a);else st.B.دولار-=d.a;
+                    if(d.party)stUpdDebt(d.party,_cur,-d.a);else st.B[_cur]=(st.B[_cur]||0)-d.a;
                     st.B.دينار+=d.dinarVal;
                 }else{
-                    if(d.party)stUpdDebt(d.party,'دولار',-d.a);else st.B.دولار-=d.a;
+                    if(d.party)stUpdDebt(d.party,_cur,-d.a);else st.B[_cur]=(st.B[_cur]||0)-d.a;
                     stUpdDebt(d.c,'دينار',d.dinarVal);
                 }
             }
@@ -372,7 +373,7 @@ function _applyEvt(st,evt){
             /* سطر سجل للطرف (من أخذه/المسلم) كي تظهر العملية في سجلّه أيضاً */
             if(d.party){
                 st.ops.push({
-                    c:d.party, t:d.isBuy?'دولار وارد':'دولار صادر', m:'دولار', a:d.a,
+                    c:d.party, t:d.isBuy?(_cur+' وارد'):(_cur+' صادر'), m:_cur, a:d.a,
                     _ts:(disp.op&&disp.op._ts)||evt.ts||Date.now(),
                     dt:(disp.op&&disp.op.dt)||'',
                     dollFrom:d.c, dr:d.r, id:evt.id+'_pty'
@@ -468,15 +469,15 @@ function _applyEvt(st,evt){
         }
 
         case 'SETTLE_DOLLAR':{
-            /* تصفية الدولار (بيع/شراء) — بنفس منطق SETTLE_GSM بلا سبائك */
+            /* تصفية الدولار/الأورو (بيع/شراء) — بنفس منطق SETTLE_GSM بلا سبائك */
             const {c,net,isBuy,cashTotal,remaining}=d;
+            const _cur=d.cur||'دولار';
             if(d.freeBuy){
-                /* شراء حرّ: الزبون مدين لك بالدولار (+)، وأنا مدين للزبون بالنقد (−) */
-                stUpdDebt(c,'دولار',d.w);
+                stUpdDebt(c,_cur,d.w);
                 stUpdDebt(c,'دينار',cashTotal);
             }else{
-                stClearDebt(c,'دولار');
-                if(Math.abs(remaining)>0.001)stUpdDebt(c,'دولار',net>0?remaining:-remaining);
+                stClearDebt(c,_cur);
+                if(Math.abs(remaining)>0.001)stUpdDebt(c,_cur,net>0?remaining:-remaining);
                 stUpdDebt(c,'دينار',cashTotal);
             }
             break;
@@ -630,7 +631,7 @@ function _reproject(){
         .sort((a,b)=>((a.ts||0)-(b.ts||0))||String(a.id).localeCompare(String(b.id)));
 
     const st={
-        B:{دينار:0,دولار:0,'ذهب 730':0,'ذهب 24':0,vg730:0,vg24:0},
+        B:{دينار:0,دولار:0,'أورو':0,'ذهب 730':0,'ذهب 24':0,vg730:0,vg24:0},
         g730:[],g24:[],debts:[],loans:[],
         ops:[],invoices:[],dollInvoices:[],rafInvoices:[],dubaiInvoices:[]
     };
@@ -670,6 +671,7 @@ function load(){
             if(s.dollarRate)dollarRate=s.dollarRate;
             if(s.dollarSellRate)dollarSellRate=s.dollarSellRate;
             if(s.dollarBuyRate)dollarBuyRate=s.dollarBuyRate;
+            if(s.euroRate)euroRate=s.euroRate;if(s.euroSellRate)euroSellRate=s.euroSellRate;if(s.euroBuyRate)euroBuyRate=s.euroBuyRate;
             if(typeof s.darkMode==='boolean'){darkMode=s.darkMode;if(darkMode)applyDark();}
         }
     }catch(e){}
@@ -683,9 +685,9 @@ function load(){
 function save(){
     const _dc=(typeof _dubaiCalcVals!=='undefined')?_dubaiCalcVals:null;
     const _tb=JSON.stringify((typeof _tarbahList!=='undefined'&&_tarbahList)?_tarbahList:[]);
-    try{localStorage.setItem('gp_settings_'+(_currentUser||''),JSON.stringify({goldPrice,dollarRate,dollarSellRate,dollarBuyRate,darkMode}));}catch(e){}
+    try{localStorage.setItem('gp_settings_'+(_currentUser||''),JSON.stringify({goldPrice,dollarRate,dollarSellRate,dollarBuyRate,euroRate,euroSellRate,euroBuyRate,darkMode}));}catch(e){}
     if(!_baseRef||!_fbLoaded)return;
-    try{_baseRef.child('settings').set(_withOwner({goldPrice,dollarRate,dollarSellRate,dollarBuyRate,darkMode,dubaiCalc:_dc,tarbah:_tb,_ts:firebase.database.ServerValue.TIMESTAMP})).catch(_fbErr);}catch(e){}
+    try{_baseRef.child("settings").set(_withOwner({goldPrice,dollarRate,dollarSellRate,dollarBuyRate,euroRate,euroSellRate,euroBuyRate,darkMode,dubaiCalc:_dc,tarbah:_tb,_ts:firebase.database.ServerValue.TIMESTAMP})).catch(_fbErr);}catch(e){}
 }
 
 let _saveTimer=null;
@@ -702,6 +704,7 @@ function _fbInitialLoad(){
             if(cfg.dollarRate)dollarRate=cfg.dollarRate;
             if(cfg.dollarSellRate)dollarSellRate=cfg.dollarSellRate;
             if(cfg.dollarBuyRate)dollarBuyRate=cfg.dollarBuyRate;
+            if(cfg.euroRate)euroRate=cfg.euroRate;if(cfg.euroSellRate)euroSellRate=cfg.euroSellRate;if(cfg.euroBuyRate)euroBuyRate=cfg.euroBuyRate;
             if(typeof cfg.darkMode==='boolean'){darkMode=cfg.darkMode;if(darkMode)applyDark();}
             try{localStorage.setItem('gp_settings_'+(_currentUser||''),JSON.stringify({goldPrice,dollarRate,darkMode}));}catch(e){}
             if(cfg.dubaiCalc&&typeof _applyDubaiCalcSettings==='function')_applyDubaiCalcSettings(cfg.dubaiCalc);
@@ -1014,7 +1017,9 @@ window._warnIfConsumedEvt=(evtId)=>{
     });
 };
 function _voidByInvId(field,id){
-    const evt=_allEvents.find(e=>e.display&&e.display[field]&&e.display[field].id===id&&e.type!=='VOID');
+    /* تخطَّ الأحداث المُبطَلة أصلاً حتى لا نبطل حدثاً ميّتاً ونترك الحيّ */
+    const _vd=(typeof window!=='undefined'&&window._voidedTargetIds)?window._voidedTargetIds:new Set();
+    const evt=_allEvents.find(e=>e.display&&e.display[field]&&e.display[field].id===id&&e.type!=='VOID'&&!_vd.has(e.id));
     if(!evt){return false;}
 
     /* ── مفارقة VOID: تحذير إذا استُهلكت سبائك هذا الحدث في عمليات لاحقة حيّة ── */
@@ -1083,9 +1088,14 @@ window.delDoll=(id)=>{
 
 window.delDubai=(id)=>{
     if(!confirm('حذف هذه الفاتورة وعكس أثرها؟'))return;
-    if(!_voidByInvId('dubaiInvoice',id)){
+    /* أبطل كل الأحداث الحيّة التي تحمل نفس معرّف الفاتورة (يعالج التكرار من تعديل سابق) */
+    const voided=(typeof window._voidedTargetIds!=='undefined'&&window._voidedTargetIds)?window._voidedTargetIds:new Set();
+    const targets=(_allEvents||[]).filter(e=>e&&e.type!=='VOID'&&!voided.has(e.id)&&e.display&&e.display.dubaiInvoice&&e.display.dubaiInvoice.id===id);
+    if(targets.length){
+        targets.forEach(e=>{ try{ emitEvent('VOID',{voids:e.id},{}); }catch(_){} });
+    }else{
         dubaiInvoices=dubaiInvoices.filter(x=>x.id!==id);
-        renderArchive();
     }
+    try{renderArchive&&renderArchive();updAll&&updAll();}catch(_){}
     toast('🗑️ تم الحذف','info');
 };
