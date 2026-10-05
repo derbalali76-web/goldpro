@@ -396,8 +396,10 @@ function _applyEvt(st,evt){
         }
 
         case 'DUBAI':{
-            if(d.fromDebt>0.001)stUpdDebt(d.o,'ذهب 24',-d.fromDebt);
-            applyBars();
+            /* بيع دبي: الوزن كلّه يُطرح من حساب ذهب المكتب (−w) ولا يمسّ المخزون إطلاقاً.
+               الزائد عن رصيد المكتب يبقى في حسابه (يقلبه نحو الأخضر) لا في المخزون. */
+            const _wSell=(d.w!=null?d.w:((d.fromDebt||0)+(d.fromInv||0)));
+            stUpdDebt(d.o,'ذهب 24',-_wSell);
             stUpdDebt(d.o,'دولار',d.usd);
             if(disp.dubaiInvoice)st.dubaiInvoices.unshift(disp.dubaiInvoice);
             break;
