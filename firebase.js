@@ -204,7 +204,24 @@ function _withOwner(obj){
 let _allEvents=[];
 let _fbListening=false;
 
-function _getEvLsKey(){return 'gp_ev_'+(_currentUser||'');}
+/* مفاتيح الكاش المحلي مقيّدة بالسيريال + المستخدم — حتى لا تتداخل بيانات سيريال مع آخر على نفس الجهاز */
+function _siteP(){return (typeof _SITE!=='undefined'&&_SITE)?_SITE+'_':'';}
+function _getEvLsKey(){return 'gp_ev_'+_siteP()+(_currentUser||'');}
+function _getSettingsLsKey(){return 'gp_settings_'+_siteP()+(_currentUser||'');}
+/* ترحيل لمرّة واحدة: المفاتيح القديمة كانت بلا سيريال (gp_ev_<user>/gp_settings_<user>).
+   انقلها لمفتاح السيريال الحالي ثم احذف القديم حتى لا يُقرأ تحت سيريال آخر لاحقاً. */
+function _migrateUnscopedCache(){
+    try{
+        if(!(typeof _SITE!=='undefined'&&_SITE))return;   /* بلا سيريال: لا شيء للترحيل */
+        const u=_currentUser||'';
+        [['gp_ev_'+u,_getEvLsKey()],['gp_settings_'+u,_getSettingsLsKey()]].forEach(([oldK,newK])=>{
+            if(oldK!==newK && localStorage.getItem(newK)===null){
+                const v=localStorage.getItem(oldK);
+                if(v!==null){ try{localStorage.setItem(newK,v);}catch(e){} try{localStorage.removeItem(oldK);}catch(e){} }
+            }
+        });
+    }catch(e){}
+}
 
 function _lsSaveEvents(){
     try{_lsSet(_getEvLsKey(),_allEvents);}catch(e){}
@@ -663,10 +680,11 @@ function emitEvent(type,data,display){
 
 /* ═══════════ LOAD — تحميل من localStorage ثم إعادة الإسقاط ═══════════ */
 function load(){
+    _migrateUnscopedCache();     /* قيِّد الكاش القديم بالسيريال الحالي قبل القراءة */
     _lsLoadEvents();
     /* تحميل الإعدادات */
     try{
-        const raw=localStorage.getItem('gp_settings_'+(_currentUser||''));
+        const raw=localStorage.getItem(_getSettingsLsKey());
         if(raw){
             const s=JSON.parse(raw);
             if(s.goldPrice)goldPrice=s.goldPrice;
@@ -686,8 +704,10 @@ function load(){
 /* ═══════════ SAVE — يحفظ الإعدادات فقط ═══════════ */
 function save(){
     const _dc=(typeof _dubaiCalcVals!=='undefined')?_dubaiCalcVals:null;
-    const _tb=JSON.stringify((typeof _tarbahList!=='undefined'&&_tarbahList)?_tarbahList:[]);
-    try{localStorage.setItem('gp_settings_'+(_currentUser||''),JSON.stringify({goldPrice,dollarRate,dollarSellRate,dollarBuyRate,euroRate,euroSellRate,euroBuyRate,darkMode}));}catch(e){}
+    const _tb=(typeof window!=='undefined'&&typeof window._tarbahSerialize==='function')
+        ?window._tarbahSerialize()
+        :JSON.stringify((typeof _tarbahList!=='undefined'&&_tarbahList)?_tarbahList:[]);
+    try{localStorage.setItem(_getSettingsLsKey(),JSON.stringify({goldPrice,dollarRate,dollarSellRate,dollarBuyRate,euroRate,euroSellRate,euroBuyRate,darkMode}));}catch(e){}
     if(!_baseRef||!_fbLoaded)return;
     try{_baseRef.child("settings").set(_withOwner({goldPrice,dollarRate,dollarSellRate,dollarBuyRate,euroRate,euroSellRate,euroBuyRate,darkMode,dubaiCalc:_dc,tarbah:_tb,_ts:firebase.database.ServerValue.TIMESTAMP})).catch(_fbErr);}catch(e){}
 }
@@ -708,7 +728,7 @@ function _fbInitialLoad(){
             if(cfg.dollarBuyRate)dollarBuyRate=cfg.dollarBuyRate;
             if(cfg.euroRate)euroRate=cfg.euroRate;if(cfg.euroSellRate)euroSellRate=cfg.euroSellRate;if(cfg.euroBuyRate)euroBuyRate=cfg.euroBuyRate;
             if(typeof cfg.darkMode==='boolean'){darkMode=cfg.darkMode;if(darkMode)applyDark();}
-            try{localStorage.setItem('gp_settings_'+(_currentUser||''),JSON.stringify({goldPrice,dollarRate,darkMode}));}catch(e){}
+            try{localStorage.setItem(_getSettingsLsKey(),JSON.stringify({goldPrice,dollarRate,darkMode}));}catch(e){}
             if(cfg.dubaiCalc&&typeof _applyDubaiCalcSettings==='function')_applyDubaiCalcSettings(cfg.dubaiCalc);
             if(typeof cfg.tarbah==='string'&&typeof _applyTarbah==='function')_applyTarbah(cfg.tarbah);
         }
@@ -795,7 +815,7 @@ function _startSettingsSync(){
         if(s.goldPrice)goldPrice=s.goldPrice;
         if(s.dollarRate)dollarRate=s.dollarRate;
         if(typeof s.darkMode==='boolean'){darkMode=s.darkMode;if(darkMode)applyDark();}
-        try{localStorage.setItem('gp_settings_'+(_currentUser||''),JSON.stringify({goldPrice,dollarRate,darkMode}));}catch(e){}
+        try{localStorage.setItem(_getSettingsLsKey(),JSON.stringify({goldPrice,dollarRate,darkMode}));}catch(e){}
         if(s.dubaiCalc&&typeof _applyDubaiCalcSettings==='function')_applyDubaiCalcSettings(s.dubaiCalc);
         if(typeof s.tarbah==='string'&&typeof _applyTarbah==='function')_applyTarbah(s.tarbah);
         if(typeof updAll==='function')updAll();

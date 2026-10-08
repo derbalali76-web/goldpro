@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v118';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v120';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1550,16 +1550,38 @@ window._tarbahTotalW=()=>{
 };
 const _tarbahKey=()=>'tarbah_notes_'+(typeof _SITE!=='undefined'&&_SITE?_SITE+'_':'')+(_currentUser||'_');
 window._tarbahList=[];
+window._tarbahDel=[];                 /* شواهد الحذف (tombstones) — تمنع عودة المحذوف وتمنع مسح الجديد */
+const _tarbahDelKey=()=>_tarbahKey()+'_del';
 window._loadTarbah=()=>{
     try{ window._tarbahList=JSON.parse(localStorage.getItem(_tarbahKey())||'[]')||[]; }catch(e){ window._tarbahList=[]; }
+    try{ window._tarbahDel=JSON.parse(localStorage.getItem(_tarbahDelKey())||'[]')||[]; }catch(e){ window._tarbahDel=[]; }
     if(typeof _renderTarbahList==='function')_renderTarbahList();
 };
+/* تسلسل القائمة + شواهد الحذف معاً للمزامنة السحابية */
+window._tarbahSerialize=()=>{ try{return JSON.stringify({list:(window._tarbahList||[]),del:(window._tarbahDel||[])});}catch(e){return '{"list":[],"del":[]}';} };
 function _tarbahPersist(){
-    try{localStorage.setItem(_tarbahKey(),JSON.stringify(window._tarbahList));}catch(e){}
+    try{localStorage.setItem(_tarbahKey(),JSON.stringify(window._tarbahList||[]));}catch(e){}
+    try{localStorage.setItem(_tarbahDelKey(),JSON.stringify(window._tarbahDel||[]));}catch(e){}
     if(typeof _scheduleSave==='function')_scheduleSave();   /* مزامنة عبر الأجهزة عبر إعدادات Firebase */
 }
+/* دمج الوارد من السحابة بدل استبداله: اتحاد بالمعرّف ناقص المحذوف — فلا تختفي إضافة حديثة */
 window._applyTarbah=(jsonStr)=>{
-    try{ const arr=JSON.parse(jsonStr); if(Array.isArray(arr)){ window._tarbahList=arr; try{localStorage.setItem(_tarbahKey(),jsonStr);}catch(e){} _renderTarbahList(); } }catch(e){}
+    try{
+        const inc=JSON.parse(jsonStr);
+        let incList, incDel;
+        if(Array.isArray(inc)){ incList=inc; incDel=[]; }               /* الصيغة القديمة: مصفوفة فقط */
+        else if(inc&&typeof inc==='object'){ incList=Array.isArray(inc.list)?inc.list:[]; incDel=Array.isArray(inc.del)?inc.del:[]; }
+        else return;
+        const del=new Set([...(window._tarbahDel||[]),...incDel]);      /* اتحاد شواهد الحذف */
+        const byId=new Map();
+        (window._tarbahList||[]).forEach(x=>{ if(x&&x.id)byId.set(x.id,x); });          /* المحلي أولاً (يحفظ الترتيب والتفاصيل) */
+        (incList||[]).forEach(x=>{ if(x&&x.id&&!byId.has(x.id))byId.set(x.id,x); });     /* ثم الجديد من السحابة */
+        window._tarbahList=[...byId.values()].filter(x=>!del.has(x.id)); /* احذف ما في الشواهد فقط */
+        window._tarbahDel=[...del];
+        try{localStorage.setItem(_tarbahKey(),JSON.stringify(window._tarbahList));}catch(e){}
+        try{localStorage.setItem(_tarbahDelKey(),JSON.stringify(window._tarbahDel));}catch(e){}
+        if(typeof _renderTarbahList==='function')_renderTarbahList();
+    }catch(e){}
 };
 let _tbType='buy';
 window._setTbType=(t)=>{
@@ -1616,6 +1638,7 @@ window.addTarbah=()=>{
 };
 window.delTarbah=(id)=>{
     window._tarbahList=(window._tarbahList||[]).filter(x=>x.id!==id);
+    if(id&&(window._tarbahDel=window._tarbahDel||[]).indexOf(id)===-1)window._tarbahDel.push(id);  /* شاهد حذف ليبقى محذوفاً عبر الأجهزة */
     _tarbahPersist(); _renderTarbahList(); try{updAll();}catch(e){}
 };
 function _renderTarbahList(){
