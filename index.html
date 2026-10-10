@@ -4,22 +4,23 @@
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- الافتراضي: يسمح بالتكبير (أندرويد وغيره). يُقفَل في الآيفون فقط عبر السكربت أدناه -->
+    <meta id="vpMeta" name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Calculator">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#01406c">
     <title>Calculator</title>
-    <link rel="manifest" href="manifest.json?v=120">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=120">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=120">
+    <link rel="manifest" href="manifest.json?v=123">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=123">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=123">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/calc-180.png?v=120">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=120">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=120">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=120">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=120">
+    <link rel="apple-touch-icon" href="icons/calc-180.png?v=123">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=123">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=123">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=123">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=123">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -34,6 +35,10 @@
     <style>
         /* خطّ احتياطي عربي مضمون — يمنع اختفاء الكتابة إن تعذّر تحميل Tajawal */
         html,body{font-family:Tajawal,"Noto Kufi Arabic","Noto Naskh Arabic","Droid Arabic Naskh","Segoe UI",Arial,sans-serif}
+        /* منع ضبط حجم النص تلقائياً (لا يمنع التكبير بالإصبعين) */
+        html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+        /* الآيفون فقط: خطّ خانات الإدخال 16px يمنع التكبير التلقائي عند اللمس — مع بقاء التكبير بالإصبعين يعمل */
+        html.ios-nozoom input,html.ios-nozoom select,html.ios-nozoom textarea{font-size:16px!important}
         /* إخفاء شاشة الدخول فوراً إن كانت الجلسة محفوظة (يمنع الومضة) */
         html.gp-session #loginOverlay{display:none!important}
     </style>
@@ -51,6 +56,15 @@
                     document.documentElement.classList.remove('gp-session');
             }catch(e){}
         },8000);
+        /* ═══ الآيفون: امنع التكبير التلقائي عند لمس الخانات فقط، وأبقِ التكبير بالإصبعين يعمل ═══ */
+        try{
+            var _ua=navigator.userAgent||'';
+            var _isIOS=/iPad|iPhone|iPod/.test(_ua)
+                     ||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); /* آيباد iPadOS */
+            /* لا قفل للعرض ولا حرّاس قرص — القرص بإصبعين يعمل على كل الأنظمة.
+               في الآيفون فقط نكبّر خطّ الخانات إلى 16px عبر الكلاس (العتبة التي تمنع تكبير آيفون التلقائي). */
+            if(_isIOS)document.documentElement.classList.add('ios-nozoom');
+        }catch(e){}
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -58,7 +72,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=120">
+    <link rel="stylesheet" href="./style.css?v=123">
 </head>
 <body>
 <!-- ═══════════ قناع الآلة الحاسبة (تصميم فاتح · الكود 0505 يكشف التطبيق) ═══════════ -->
@@ -988,13 +1002,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=120"></script>
-<script src="./app.js?v=120"></script>
-<script src="./assistant.js?v=120"></script>
-<script src="./inventory.js?v=120"></script>
-<script src="./invoice.js?v=120"></script>
-<script src="./raffinage.js?v=120"></script>
-<script src="./auth.js?v=120"></script>
+<script src="./firebase.js?v=123"></script>
+<script src="./app.js?v=123"></script>
+<script src="./assistant.js?v=123"></script>
+<script src="./inventory.js?v=123"></script>
+<script src="./invoice.js?v=123"></script>
+<script src="./raffinage.js?v=123"></script>
+<script src="./auth.js?v=123"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->
