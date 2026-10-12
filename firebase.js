@@ -330,6 +330,13 @@ function _applyEvt(st,evt){
             break;
         }
 
+        case 'MELT':{
+            /* تذويب: إزالة السبائك المحدَّدة (من أي مخزون) وإضافة سبيكة واحدة جديدة.
+               applyBars تتكفّل بـ barsRemove (المخزونين) و barsAdd (حسب pool الجديد). */
+            applyBars();
+            break;
+        }
+
         case 'GT':{
             if(d.gtType==='give'){
                 applyBars();
