@@ -789,9 +789,9 @@ window.toggleGTKarat=()=>{
     const eq=document.getElementById('gtEqBox');
     const kr=document.getElementById('gtKaratRow');
     const ex=document.getElementById('gt730Extra');
-    /* «من أخذه»: يظهر فقط عند الاستلام (قبضت) + دينار */
+    /* «من أخذه»: يظهر عند الاستلام (قبضت) لكل الأنواع (دينار/دولار/أورو/ذهب 24/ذهب 730) */
     const tb=document.getElementById('gtTakenBy'), tbh=document.getElementById('gtTakenByHint');
-    const showTB=(gtType==='take'&&m==='دينار');
+    const showTB=(gtType==='take');
     if(tb)tb.style.display=showTB?'block':'none';
     if(tbh)tbh.style.display=showTB?'block':'none';
     if(!showTB&&tb)tb.value='';
@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v125';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v126';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -932,9 +932,9 @@ window.saveGT=()=>{
         ? gt730Bars.reduce((s,b)=>s+b.w*b.k/730,0)
         : (isG730?(a*k)/730:a);
     const note=document.getElementById('gtNote').value.trim();
-    /* «من أخذه»: اسم زبون آخر (استلام دينار فقط) */
+    /* «من أخذه»: اسم زبون آخر (استلام أي نوع: دينار/دولار/أورو/ذهب 24/ذهب 730) */
     const _tbEl=document.getElementById('gtTakenBy');
-    const takenBy=(gtType==='take'&&m==='دينار'&&_tbEl&&_tbEl.style.display!=='none')?(_tbEl.value||'').trim():'';
+    const takenBy=(gtType==='take'&&_tbEl&&_tbEl.style.display!=='none')?(_tbEl.value||'').trim():'';
     if(takenBy&&takenBy===c)return toast('«من أخذه» يجب أن يكون زبوناً مختلفاً عن الدافع','error');
     const dt=new Date().toLocaleDateString('fr-FR');
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -960,8 +960,11 @@ window.saveGT=()=>{
             barsRemove=r.barsRemove;barUpdates=r.barUpdates;
         }
     }else{
-        if(isG730){ gt730Bars.forEach(b=>{ barsAdd.push({id:uid(),pool:'730',w:b.w,k:b.k}); }); }
-        else if(isG24){const bid=uid();barsAdd.push({id:bid,pool:'24',w:a,k:1000});}
+        /* مع «من أخذه»: الذهب لا يدخل الكوفر — مجرّد تحويل دَين بين زبونين، فلا نضيف سبائك */
+        if(!takenBy){
+            if(isG730){ gt730Bars.forEach(b=>{ barsAdd.push({id:uid(),pool:'730',w:b.w,k:b.k}); }); }
+            else if(isG24){const bid=uid();barsAdd.push({id:bid,pool:'24',w:a,k:1000});}
+        }
     }
     const dispBars={};
     barsAdd.forEach(b=>{
@@ -983,8 +986,8 @@ window.saveGT=()=>{
             invoice:gt730Inv||undefined,
             op:{c,t:gtType==='give'?'أعطيت':'استلمت',m,a:finalAmount,
                 _ts:Date.now(),dt:nowStr,
-                ...(takenBy?{note:('أخذه: '+takenBy)+(note?(' · '+note):'')}:{}),
-                ...(isG730?{realW:totW,realK:(uniformK||'متعدد'),note,bars730:gt730Bars||undefined}:(takenBy?{}:{note}))}
+                note:(takenBy?('أخذه: '+takenBy)+(note?(' · '+note):''):note),
+                ...(isG730?{realW:totW,realK:(uniformK||'متعدد'),bars730:gt730Bars||undefined}:{})}
         }
     );
     document.getElementById('gtCustomer').value='';
