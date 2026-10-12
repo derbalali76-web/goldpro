@@ -74,13 +74,14 @@ function _ensureMeltModal(){
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
             <div>
                 <label style="font-size:.72rem;color:var(--t2);display:block;margin-bottom:.2rem">الميزان الجديد (غ)</label>
-                <input id="meltW" type="text" inputmode="decimal" placeholder="الوزن" style="padding:.6rem;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;box-sizing:border-box;text-align:center;background:var(--card);color:var(--t);width:100%">
+                <input id="meltW" type="text" inputmode="decimal" placeholder="الوزن" oninput="_updateMeltDiff()" style="padding:.6rem;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;box-sizing:border-box;text-align:center;background:var(--card);color:var(--t);width:100%">
             </div>
             <div>
                 <label style="font-size:.72rem;color:var(--t2);display:block;margin-bottom:.2rem">العيار الجديد</label>
-                <input id="meltK" type="text" inputmode="decimal" placeholder="العيار" style="padding:.6rem;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;box-sizing:border-box;text-align:center;background:var(--card);color:var(--t);width:100%">
+                <input id="meltK" type="text" inputmode="decimal" placeholder="العيار" oninput="_updateMeltDiff()" style="padding:.6rem;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;box-sizing:border-box;text-align:center;background:var(--card);color:var(--t);width:100%">
             </div>
         </div>
+        <div id="meltDiff" style="margin-top:.55rem"></div>
         <div style="font-size:.68rem;color:var(--t3);margin:.45rem 0 .2rem">العيار ≥ 999 يدخل مخزون 24، وإلا مخزون 730.</div>
         <div class="mactions" style="margin-top:.6rem">
             <button class="bgy" onclick="closeModal('meltModal')">إلغاء</button>
@@ -95,14 +96,35 @@ window.openMeltForm=()=>{
     if(!sel.length)return toast('حدِّد سبيكة واحدة على الأقل','error');
     _ensureMeltModal();
     const sumW=sel.reduce((s,b)=>s+(b.w||0),0);
+    /* خالص المحدَّد بمكافئ 730 = Σ (وزن × عيار ÷ 730) */
+    const srcEq730=sel.reduce((s,b)=>s+(b.w||0)*((b.k||0)/730),0);
+    const blendK=sumW>0?(sel.reduce((s,b)=>s+(b.w||0)*(b.k||0),0)/sumW):0;   /* العيار المخلوط (على 1000) */
+    window._meltSrc={n:sel.length,sumW,eq730:srcEq730,blendK};
     document.getElementById('meltSummary').innerHTML=
-        `عدد السبائك: <strong>${sel.length}</strong> · مجموع الوزن: <strong>${fmt(sumW,2)} غ</strong><br>`+
-        sel.map(b=>`• ${fmt(b.w,2)}غ عيار ${fmt(b.k||0,1)}`).join('<br>');
-    /* تعبئة مبدئية: الوزن = مجموع المحدَّد، العيار = عيار أول سبيكة (قابل للتعديل) */
+        `عدد السبائك: <strong>${sel.length}</strong><br>`+
+        `مجموع الوزن: <strong>${fmt(sumW,2)} غ</strong><br>`+
+        `الخالص (مكافئ 730): <strong>${fmt(srcEq730,2)} غ</strong> · عيار ≈ ${fmt(blendK,0)}`;
+    /* تعبئة مبدئية: الوزن = مجموع المحدَّد، العيار = العيار المخلوط (قابل للتعديل) */
     document.getElementById('meltW').value=fmt(sumW,2).replace(/\s/g,'');
-    document.getElementById('meltK').value=sel[0]?.k||(pool==='24'?1000:730);
+    document.getElementById('meltK').value=fmt(blendK,0).replace(/\s/g,'')||(pool==='24'?1000:730);
+    _updateMeltDiff();
     document.getElementById('meltModal').classList.add('active');
     setTimeout(()=>document.getElementById('meltW').focus(),300);
+};
+/* فرق حيّ قبل الحفظ: خالص الناتج والفرق — كله بمكافئ 730 */
+window._updateMeltDiff=()=>{
+    const box=document.getElementById('meltDiff'); if(!box||!window._meltSrc)return;
+    const num=v=>{const n=parseFloat(String(v||'').replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:0;};
+    const w=num(document.getElementById('meltW').value), k=num(document.getElementById('meltK').value);
+    const outEq730=w*k/730;                       /* خالص الناتج بمكافئ 730 */
+    const diff=outEq730-window._meltSrc.eq730;     /* الفرق (سالب = نقص) */
+    const col=Math.abs(diff)<0.005?'var(--t2)':(diff<0?'#dc2626':'#16a34a');
+    const sign=diff>0.005?'+':'';
+    box.innerHTML=
+        `<div style="display:flex;justify-content:space-between;gap:.5rem;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:.5rem .65rem;font-size:.8rem">
+            <span style="color:var(--t2)">خالص الناتج (مكافئ 730): <strong style="color:var(--t)">${fmt(outEq730,2)} غ</strong></span>
+            <span style="color:${col};font-weight:800">الفرق: ${sign}${fmt(diff,2)} غ</span>
+        </div>`;
 };
 window.confirmMelt=()=>{
     const srcPool=invType, bars=srcPool==='24'?g24:g730;
