@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v127';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v128';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -2532,14 +2532,22 @@ window._cgSetGold=(g)=>{
     if(b)b.style.cssText='flex:1;padding:.5rem;border-radius:8px;font-weight:800;font-size:.82rem;cursor:pointer;font-family:inherit;border:1.5px solid #3b82f6;'+(g==='ذهب 24'?'background:#3b82f6;color:#fff':'background:transparent;color:#3b82f6');
     _cgCalc();
 };
+/* غرامات الذهب الناتجة من مبلغ بسعر 730 المرجعي:
+   - 730: غرام = المبلغ ÷ السعر.
+   - 24 : السعر يُحوّل أولاً لسعر 24 (سعر730 × 1000÷730)، فيصير الغرام = (المبلغ ÷ السعر) × 730÷1000. */
+function _cgGrams(amt,price730){
+    if(!(amt>0)||!(price730>0))return 0;
+    return (_cgGoldType==='ذهب 24') ? (amt/price730)*(730/1000) : (amt/price730);
+}
 window._cgCalc=()=>{
     const num=v=>{const n=parseFloat(String(v||'').replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:0;};
     const amt=num(document.getElementById('cgAmount').value), price=num(document.getElementById('cgPrice').value);
     const box=document.getElementById('cgPreview');
     if(!(amt>0)||!(price>0)){box.textContent='أدخل المبلغ والسعر';return;}
-    const grams=amt/price;
+    const grams=_cgGrams(amt,price);
     const sign=_cgSrcBal<0?'−':'';
-    box.innerHTML=`= <strong>${sign}${fmt(grams,3)} غ</strong> ${_cgGoldType} <span style="color:var(--t3)">(${_cgSrcBal<0?'يسالك':'تسالو'})</span>`;
+    const price24note=(_cgGoldType==='ذهب 24')?`<div style="font-size:.7rem;color:var(--t3);margin-top:.25rem">سعر 24 = ${fmt(price*1000/730,2)}</div>`:'';
+    box.innerHTML=`= <strong>${sign}${fmt(grams,3)} غ</strong> ${_cgGoldType} <span style="color:var(--t3)">(${_cgSrcBal<0?'يسالك':'تسالو'})</span>${price24note}`;
 };
 window.confirmConvGold=()=>{
     const num=v=>{const n=parseFloat(String(v||'').replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:0;};
@@ -2548,7 +2556,7 @@ window.confirmConvGold=()=>{
     if(!(price>0))return toast('أدخل السعر','error');
     if(amt>Math.abs(_cgSrcBal)+0.01)return toast('المبلغ أكبر من الرصيد المتاح','error');
     const sign=_cgSrcBal<0?-1:1;
-    const grams=parseFloat((amt/price).toFixed(4));
+    const grams=parseFloat(_cgGrams(amt,price).toFixed(4));
     const srcSigned=sign*amt;          /* الجزء المحوَّل من الرصيد النقدي (بإشارته) */
     const goldSigned=sign*grams;       /* الذهب الناتج (نفس الإشارة: أحمر→أحمر، أخضر→أخضر) */
     const c=_settleCustomer, srcType=_cgSrcType, goldType=_cgGoldType;
