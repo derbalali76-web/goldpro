@@ -330,6 +330,14 @@ function _applyEvt(st,evt){
             break;
         }
 
+        case 'CONV_GOLD':{
+            /* تحويل رصيد نقدي إلى ذهب: دين → دين، لا يمسّ الخزنة ولا المخزون.
+               يُطرح الجزء المحوَّل من الرصيد النقدي (بإشارته) ويُضاف ذهب بنفس الإشارة. */
+            stUpdDebt(d.c,d.srcType,-d.srcAmt);
+            stUpdDebt(d.c,d.goldType,d.goldAmt);
+            break;
+        }
+
         case 'MELT':{
             /* تذويب: إزالة السبائك المحدَّدة (من أي مخزون) وإضافة سبيكة واحدة جديدة.
                applyBars تتكفّل بـ barsRemove (المخزونين) و barsAdd (حسب pool الجديد). */

@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v126';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v127';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -2319,6 +2319,8 @@ function _renderSettleRows(){
             ?`<button class="btn-settle" style="background:rgba(59,130,246,.1);color:#3b82f6;border-color:#3b82f6;font-size:.72rem;padding:.3rem .5rem" onclick="settle24FromInv()">📦 مخزون</button>`
             :'';
         const xferBtn=`<button class="btn-settle" style="background:rgba(139,92,246,.12);color:#7c3aed;border-color:#7c3aed;font-size:.72rem;padding:.3rem .5rem" onclick="openXfer('${type}')">🔁 تحويل لزبون</button>`;
+        /* تحويل رصيد نقدي (دينار/دولار/أورو) إلى ذهب بسعر يُدخله المستخدم */
+        const toGoldBtn=(!isGold)?`<button class="btn-settle" style="background:rgba(217,119,6,.12);color:#d97706;border-color:#d97706;font-size:.72rem;padding:.3rem .5rem" onclick="openConvGold('${type}')">🪙 تحويل لذهب</button>`:'';
         return`<div class="settle-row">
             <div>
                 <div class="sr-info">${icons[type]} ${type} — <span style="font-size:.7rem;color:var(--t2)">${dir}</span></div>
@@ -2328,6 +2330,7 @@ function _renderSettleRows(){
                 <button class="btn-settle" onclick="${mainBtnClick}">${btnLabel}</button>
                 ${extraBtn}
                 ${xferBtn}
+                ${toGoldBtn}
             </div>
         </div>`;
     }).join('')+buyGoldBox;
@@ -2497,6 +2500,104 @@ function _ensureXferModal(){
             </div>
             <div style="font-size:.72rem;color:var(--t3);text-align:center;line-height:1.5">يُخصم من حساب المصدر ويُضاف لحساب الهدف — دون أي تأثير على المخزون</div>
             <button class="bg" style="width:100%;padding:.7rem;font-size:.93rem" onclick="doXfer()">✅ تأكيد التحويل</button>
+        </div>
+    </div>`;
+    document.body.appendChild(div);
+}
+
+/* ═══════════ تحويل رصيد نقدي إلى ذهب (دين → دين، لا يمسّ المخزون) ═══════════ */
+let _cgSrcType=null,_cgSrcBal=0,_cgGoldType='ذهب 730';
+window.openConvGold=(srcType)=>{
+    const bal=debts.filter(x=>x.c===_settleCustomer&&x.type===srcType).reduce((s,x)=>s+(x.a||0),0);
+    if(Math.abs(bal)<0.001){toast('لا يوجد رصيد لهذا النوع','info');return;}
+    _cgSrcType=srcType; _cgSrcBal=bal; _cgGoldType='ذهب 730';
+    _ensureConvGoldModal();
+    const unit=srcType==='دينار'?'دج':srcType==='دولار'?'$':'€';
+    const dec=srcType==='دينار'?0:2;
+    const dir=bal>0?'تسالو (مدين لك)':'يسالك (أنت مدين له)';
+    document.getElementById('cgFrom').textContent=_settleCustomer;
+    document.getElementById('cgSrcInfo').textContent=`${srcType} — ${fmt(Math.abs(bal),dec)} ${unit} · ${dir}`;
+    document.getElementById('cgAmount').value=(Math.round(Math.abs(bal)*100)/100).toString().replace('.',',');
+    document.getElementById('cgAmountLabel').textContent=`المبلغ المراد تحويله (${unit})`;
+    document.getElementById('cgPrice').value='';
+    document.getElementById('cgPriceLabel').textContent=`السعر (${unit} لكل غ)`;
+    _cgSetGold('ذهب 730');
+    document.getElementById('cgModal').classList.add('active');
+    setTimeout(()=>document.getElementById('cgPrice').focus(),320);
+};
+window._cgSetGold=(g)=>{
+    _cgGoldType=g;
+    const a=document.getElementById('cgGold730'), b=document.getElementById('cgGold24');
+    if(a)a.style.cssText='flex:1;padding:.5rem;border-radius:8px;font-weight:800;font-size:.82rem;cursor:pointer;font-family:inherit;border:1.5px solid #d97706;'+(g==='ذهب 730'?'background:#d97706;color:#fff':'background:transparent;color:#d97706');
+    if(b)b.style.cssText='flex:1;padding:.5rem;border-radius:8px;font-weight:800;font-size:.82rem;cursor:pointer;font-family:inherit;border:1.5px solid #3b82f6;'+(g==='ذهب 24'?'background:#3b82f6;color:#fff':'background:transparent;color:#3b82f6');
+    _cgCalc();
+};
+window._cgCalc=()=>{
+    const num=v=>{const n=parseFloat(String(v||'').replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:0;};
+    const amt=num(document.getElementById('cgAmount').value), price=num(document.getElementById('cgPrice').value);
+    const box=document.getElementById('cgPreview');
+    if(!(amt>0)||!(price>0)){box.textContent='أدخل المبلغ والسعر';return;}
+    const grams=amt/price;
+    const sign=_cgSrcBal<0?'−':'';
+    box.innerHTML=`= <strong>${sign}${fmt(grams,3)} غ</strong> ${_cgGoldType} <span style="color:var(--t3)">(${_cgSrcBal<0?'يسالك':'تسالو'})</span>`;
+};
+window.confirmConvGold=()=>{
+    const num=v=>{const n=parseFloat(String(v||'').replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:0;};
+    const amt=num(document.getElementById('cgAmount').value), price=num(document.getElementById('cgPrice').value);
+    if(!(amt>0))return toast('أدخل المبلغ','error');
+    if(!(price>0))return toast('أدخل السعر','error');
+    if(amt>Math.abs(_cgSrcBal)+0.01)return toast('المبلغ أكبر من الرصيد المتاح','error');
+    const sign=_cgSrcBal<0?-1:1;
+    const grams=parseFloat((amt/price).toFixed(4));
+    const srcSigned=sign*amt;          /* الجزء المحوَّل من الرصيد النقدي (بإشارته) */
+    const goldSigned=sign*grams;       /* الذهب الناتج (نفس الإشارة: أحمر→أحمر، أخضر→أخضر) */
+    const c=_settleCustomer, srcType=_cgSrcType, goldType=_cgGoldType;
+    const unit=srcType==='دينار'?'دج':srcType==='دولار'?'$':'€';
+    const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    emitEvent('CONV_GOLD',
+        {c,srcType,srcAmt:srcSigned,goldType,goldAmt:goldSigned,price},
+        {op:{c,t:'تحويل لذهب',m:goldType,a:goldSigned,_ts:Date.now(),dt:nowStr,
+             note:`من ${fmt(amt,srcType==='دينار'?0:2)} ${unit} بسعر ${fmt(price,2)} → ${fmt(grams,3)} غ`}}
+    );
+    closeModal('cgModal');
+    if(typeof _renderSettleRows==='function')_renderSettleRows();
+    toast(`🪙 حُوّل ${fmt(amt,srcType==='دينار'?0:2)} ${unit} إلى ${fmt(grams,3)} غ ${goldType}`,'success');
+};
+function _ensureConvGoldModal(){
+    if(document.getElementById('cgModal'))return;
+    const div=document.createElement('div');
+    div.id='cgModal'; div.className='modal-overlay';
+    div.onclick=(e)=>{ if(e.target===div)closeModal('cgModal'); };
+    div.innerHTML=`
+    <div class="modal-box" style="max-width:340px">
+        <div class="modal-header">
+            <h3 style="font-size:.9rem">🪙 تحويل الرصيد إلى ذهب</h3>
+            <button class="close-btn" onclick="closeModal('cgModal')">✕</button>
+        </div>
+        <div style="padding:1rem;display:flex;flex-direction:column;gap:.7rem">
+            <div style="background:var(--card2);border-radius:8px;padding:.7rem;font-size:.82rem;display:flex;flex-direction:column;gap:.3rem">
+                <div><span style="color:var(--t2)">الحساب:</span> <strong id="cgFrom"></strong></div>
+                <div><span style="color:var(--t2)">الرصيد:</span> <span id="cgSrcInfo" style="font-weight:700"></span></div>
+            </div>
+            <div style="display:flex;gap:.5rem">
+                <button id="cgGold730" onclick="_cgSetGold('ذهب 730')">ذهب 730</button>
+                <button id="cgGold24" onclick="_cgSetGold('ذهب 24')">ذهب 24</button>
+            </div>
+            <div>
+                <label id="cgPriceLabel" style="font-size:.78rem;color:var(--t2);display:block;margin-bottom:.3rem">السعر (لكل غ)</label>
+                <input id="cgPrice" type="text" inputmode="decimal" dir="ltr" placeholder="0,00"
+                    style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:inherit;text-align:right;box-sizing:border-box"
+                    oninput="liveNum(this);_cgCalc()" />
+            </div>
+            <div>
+                <label id="cgAmountLabel" style="font-size:.78rem;color:var(--t2);display:block;margin-bottom:.3rem">المبلغ المراد تحويله</label>
+                <input id="cgAmount" type="text" inputmode="decimal" dir="ltr" placeholder="0,00"
+                    style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:inherit;text-align:right;box-sizing:border-box"
+                    oninput="liveNum(this);_cgCalc()" />
+            </div>
+            <div id="cgPreview" style="background:rgba(217,119,6,.08);border-radius:8px;padding:.6rem;text-align:center;font-size:.9rem;line-height:1.6"></div>
+            <div style="font-size:.72rem;color:var(--t3);text-align:center;line-height:1.5">يُخصم الرصيد النقدي ويُضاف ذهب بنفس الإشارة (أحمر يبقى أحمر، أخضر يبقى أخضر) — دون أي تأثير على المخزون</div>
+            <button class="bg" style="width:100%;padding:.7rem;font-size:.93rem;background:#d97706" onclick="confirmConvGold()">✅ تأكيد التحويل</button>
         </div>
     </div>`;
     document.body.appendChild(div);
