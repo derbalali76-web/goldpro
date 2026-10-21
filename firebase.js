@@ -415,9 +415,12 @@ function _applyEvt(st,evt){
         }
 
         case 'SHIP':{
-            applyBars();
+            applyBars();   /* فارغ عند عدم كفاية المخزون → لا يمسّ المخزون */
             stUpdDebt(d.o,'ذهب 24',d.rc);
-            if(d.p>0)stUpdDebt('شحن','دولار',-(d.rc*d.p));
+            /* إن لم يكفِ المخزون: الوزن يُسجَّل على اسم الشاحن (موّل الوزن → تدين له) */
+            if(d.shipperName)stUpdDebt(d.shipperName,'ذهب 24',-d.w);
+            /* سطر تكلفة الشحن: «الاسم شحن» (الأحداث القديمة بلا costCust تبقى «شحن») */
+            if(d.p>0)stUpdDebt(d.costCust||'شحن','دولار',-(d.rc*d.p));
             break;
         }
 

@@ -12,15 +12,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#01406c">
     <title>Calculator</title>
-    <link rel="manifest" href="manifest.json?v=128">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=128">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=128">
+    <link rel="manifest" href="manifest.json?v=129">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=129">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=129">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/calc-180.png?v=128">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=128">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=128">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=128">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=128">
+    <link rel="apple-touch-icon" href="icons/calc-180.png?v=129">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=129">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=129">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=129">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=129">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -72,7 +72,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=128">
+    <link rel="stylesheet" href="./style.css?v=129">
 </head>
 <body>
 <!-- ═══════════ قناع الآلة الحاسبة (تصميم فاتح · الكود 0505 يكشف التطبيق) ═══════════ -->
@@ -755,6 +755,9 @@
         onkeydown="modalNav(event,'shipFields',1)">
     <input type="text" id="shipOffice" placeholder="🏢 المكتب"
         onkeydown="modalNav(event,'shipFields',2)">
+    <input type="text" id="shipName" placeholder="🧍 اسم الشاحن (اختياري)" autocomplete="off"
+        onkeydown="modalNav(event,'shipFields',3)">
+    <div style="font-size:.7rem;color:var(--t3);text-align:center;margin:-.2rem 0 .3rem;line-height:1.5">يظهر في الديون كـ«الاسم شحن». وإن لم يكفِ مخزون 24 يُسجَّل الوزن على اسم الشاحن ويبقى المخزون كما هو.</div>
     <div class="mactions">
         <button class="bgy" onclick="closeModal('shipModal')">إلغاء</button>
         <button class="bg" onclick="saveShip()">💾 إرسال</button>
@@ -1009,13 +1012,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=128"></script>
-<script src="./app.js?v=128"></script>
-<script src="./assistant.js?v=128"></script>
-<script src="./inventory.js?v=128"></script>
-<script src="./invoice.js?v=128"></script>
-<script src="./raffinage.js?v=128"></script>
-<script src="./auth.js?v=128"></script>
+<script src="./firebase.js?v=129"></script>
+<script src="./app.js?v=129"></script>
+<script src="./assistant.js?v=129"></script>
+<script src="./inventory.js?v=129"></script>
+<script src="./invoice.js?v=129"></script>
+<script src="./raffinage.js?v=129"></script>
+<script src="./auth.js?v=129"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->

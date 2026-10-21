@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v128';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v129';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1179,24 +1179,37 @@ window.cancelRafEdit=()=>{ _flushPendingEdit(); if(typeof resetRafForm==='functi
 /* ═══════════ SHIPPING ═══════════ */
 window.openShipping=()=>{
     document.getElementById('shipWeight').value='';document.getElementById('shipPrice').value='';document.getElementById('shipOffice').value='';
+    var _sn=document.getElementById('shipName');if(_sn)_sn.value='';
     document.getElementById('shipModal').classList.add('active');
+    if(window._acAttach)_acAttach('shipName');
     setTimeout(()=>document.getElementById('shipWeight').focus(),350);
 };
 window.saveShip=()=>{
     const w=parseFloat(document.getElementById('shipWeight').value);
     const p=parseFloat(document.getElementById('shipPrice').value)||0;
     const o=document.getElementById('shipOffice').value.trim();
+    const name=(document.getElementById('shipName')?document.getElementById('shipName').value:'').trim();
     if(isNaN(w)||w<=0||!o)return toast('تأكد من البيانات','error');
-    if(B['ذهب 24']<w-0.001)return toast('⚠️ مخزون سبائك 24 غير كافٍ','error');
     const rc=Math.round(w*999/1000*100)/100;
-    const {barsRemove,barUpdates}=_pickBarsToRemove('24',w);
+    /* سطر تكلفة الشحن: «الاسم شحن» بدل «شحن» فقط */
+    const costCust=name?(name+' شحن'):'شحن';
+    /* إن لم يكفِ مخزون 24: لا نخصم من المخزون، ونسجّل الوزن على اسم الشاحن */
+    const enough=(B['ذهب 24']>=w-0.001);
+    let barsRemove=[],barUpdates=[],shipperName;
+    if(enough){
+        const r=_pickBarsToRemove('24',w);barsRemove=r.barsRemove;barUpdates=r.barUpdates;
+    }else{
+        if(!name)return toast('⚠️ مخزون 24 لا يكفي — أدخل اسم الشاحن لتسجيل الوزن عليه','error');
+        shipperName=name;   /* الوزن يُسجَّل على اسم الشاحن، والمخزون يبقى كما هو */
+    }
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     emitEvent('SHIP',
-        {o,w,rc,p,barsRemove,barUpdates},
-        {op:{c:o,t:'شحن',m:'ذهب 24',a:w,_ts:Date.now(),dt:nowStr,sp:p,rc}}
+        {o,w,rc,p,barsRemove,barUpdates,costCust,shipperName,name:name||undefined},
+        {op:{c:o,t:'شحن',m:'ذهب 24',a:w,_ts:Date.now(),dt:nowStr,sp:p,rc,
+             ...(name?{note:'الشاحن: '+name+(shipperName?' · على حسابه (مخزون غير كافٍ)':'')}:{})}}
     );
     closeModal('shipModal');
-    toast('🚢 تم إرسال الشحنة');
+    toast(shipperName?`🚢 تم الشحن — سُجّل ${fmt(w,2)} غ على ${name}`:'🚢 تم إرسال الشحنة');
     printShipPDF({office:o,weight:w,received:rc,price:p});
 };
 
@@ -1345,7 +1358,7 @@ window.openDubai=(mode)=>{
 const _modalFields={
     dubaiFields:['dubaiOffice','dubaiWeight','dubaiPrice','dubaiDisc'],
     dollarFields:['dollarCustomer','dollarAmount','dollarRate','dollarParty'],
-    shipFields:['shipWeight','shipPrice','shipOffice'],
+    shipFields:['shipWeight','shipPrice','shipOffice','shipName'],
 };
 const _modalSave={
     dubaiFields:()=>saveDubai(),
