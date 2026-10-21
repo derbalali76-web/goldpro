@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v129';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v130';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1209,7 +1209,7 @@ window.saveShip=()=>{
              ...(name?{note:'الشاحن: '+name+(shipperName?' · على حسابه (مخزون غير كافٍ)':'')}:{})}}
     );
     closeModal('shipModal');
-    toast(shipperName?`🚢 تم الشحن — سُجّل ${fmt(w,2)} غ على ${name}`:'🚢 تم إرسال الشحنة');
+    toast(shipperName?`🚢 تم الشحن — سُجّل ${fmt(w,2)} غ على «${name} شحن»`:'🚢 تم إرسال الشحنة');
     printShipPDF({office:o,weight:w,received:rc,price:p});
 };
 

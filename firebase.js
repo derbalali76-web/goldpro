@@ -417,8 +417,8 @@ function _applyEvt(st,evt){
         case 'SHIP':{
             applyBars();   /* فارغ عند عدم كفاية المخزون → لا يمسّ المخزون */
             stUpdDebt(d.o,'ذهب 24',d.rc);
-            /* إن لم يكفِ المخزون: الوزن يُسجَّل على اسم الشاحن (موّل الوزن → تدين له) */
-            if(d.shipperName)stUpdDebt(d.shipperName,'ذهب 24',-d.w);
+            /* إن لم يكفِ المخزون: الوزن يُسجَّل على نفس حساب «الاسم شحن» (مع الدولار، لا وحده) */
+            if(d.shipperName)stUpdDebt(d.costCust||((d.name||d.shipperName)+' شحن'),'ذهب 24',-d.w);
             /* سطر تكلفة الشحن: «الاسم شحن» (الأحداث القديمة بلا costCust تبقى «شحن») */
             if(d.p>0)stUpdDebt(d.costCust||'شحن','دولار',-(d.rc*d.p));
             break;
