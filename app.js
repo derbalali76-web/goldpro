@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v133';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v135';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -3766,7 +3766,7 @@ async function fetchSpotPrice(){
         inp.addEventListener('focus',()=>_show(inp));
         inp.addEventListener('blur',()=>{ setTimeout(_hide,160); _snapName(inp); });
     }
-    function init(){ ['invCustomer','rafCustomer','loanCustomer','sellCustomer','gtCustomer','dollarCustomer','dollarParty','expCustomer','sendLogCustomer','shipOffice','dubaiOffice'].forEach(_attach); }
+    function init(){ ['invCustomer','rafCustomer','loanCustomer','sellCustomer','gtCustomer','gtTakenBy','dollarCustomer','dollarParty','expCustomer','sendLogCustomer','shipOffice','dubaiOffice'].forEach(_attach); }
     window._acAttach=_attach;
     if(document.readyState!=='loading') init(); else document.addEventListener('DOMContentLoaded',init);
     setTimeout(init,800);
@@ -4095,26 +4095,32 @@ window.showDubaiMonth=(mKey)=>{
             _close(ov);
         }
     },true);
-    /* ═══ زر الرجوع (أندرويد/المتصفح) يغلق آخر نافذة مفتوحة بدل الخروج ═══
-       الحيلة: كل نافذة تُفتح تدفع «فخّ» في سجلّ التصفّح، فيجد زر الرجوع ما يرجع إليه. */
+    /* ═══ زر الرجوع (أندرويد/المتصفح) ═══
+       الأولوية: (١) أغلق النافذة المفتوحة · (٢) إن لم تكن في الرئيسية ارجع إليها ·
+       (٣) في الرئيسية بلا نوافذ = اخرج من التطبيق.
+       الحيلة: نحتفظ بـ«فخّ» في سجلّ التصفّح طالما يوجد ما نرجع عنه (نافذة مفتوحة أو صفحة غير الرئيسية). */
     const _openModals=()=>[...document.querySelectorAll('.modal-overlay.active')]
         .filter(o=>o.id!=='loginOverlay'&&o.id!=='serialOverlay');
+    const _curPage=()=>{ const a=document.querySelector('.page.active'); return a?a.id.replace('page-',''):'home'; };
+    const _needTrap=()=>_openModals().length>0 || _curPage()!=='home';
     let _trapped=false, _fromPop=false;
     function _syncTrap(){
-        const anyOpen=_openModals().length>0;
-        if(anyOpen&&!_trapped){ try{history.pushState({gpTrap:1},'');}catch(e){} _trapped=true; }
-        else if(!anyOpen&&_trapped&&!_fromPop){ _trapped=false; try{history.back();}catch(e){} }
+        const need=_needTrap();
+        if(need&&!_trapped){ try{history.pushState({gpTrap:1},'');}catch(e){} _trapped=true; }
+        else if(!need&&_trapped&&!_fromPop){ _trapped=false; try{history.back();}catch(e){} }
     }
     try{ new MutationObserver(_syncTrap).observe(document.body,{attributes:true,subtree:true,attributeFilter:['class']}); }catch(e){}
     window.addEventListener('popstate',()=>{
         _fromPop=true;
         const list=_openModals();
         if(list.length){
-            _close(list[list.length-1]);     /* أغلق الأعلى */
-            _trapped=false;
-            _syncTrap();                      /* إن بقيت نوافذ، أعِد الفخّ لرجوع تالٍ */
+            _close(list[list.length-1]);                 /* (١) أغلق النافذة الأعلى */
+            _trapped=false; _syncTrap();
+        }else if(_curPage()!=='home'){
+            try{switchPage('home');}catch(e){}           /* (٢) ارجع للرئيسية */
+            _trapped=false; _syncTrap();
         }else{
-            _trapped=false;                   /* لا شيء ليُغلق — اترك التنقّل يمضي */
+            _trapped=false;                              /* (٣) في الرئيسية — اترك الخروج يمضي */
         }
         setTimeout(()=>{_fromPop=false;},0);
     });
