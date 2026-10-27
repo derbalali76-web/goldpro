@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v137';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v138';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1820,6 +1820,13 @@ window.saveDubai=()=>{
 });
 
 /* ═══ تفاصيل العملية (helper مشترك بين السجل والفاتورة) ═══ */
+/* عرض فقط: سطر «تحويل وارد» للهدف يظهر أعطيت (أحمر) أو استلمت (أخضر) حسب اتجاه الرصيد — لا يمسّ الحسابات */
+function _xferDisp(o){
+    if(o && o.t==='تحويل وارد' && o.xferPos!==undefined){
+        return {...o, t: o.xferPos?'أعطيت':'استلمت'};
+    }
+    return o;
+}
 function opDetailLines(o){
     const f=(n,d=2)=>(n||0).toLocaleString('fr-FR',{maximumFractionDigits:d});
     const lines=[];
@@ -1914,7 +1921,7 @@ window.showShipLog=()=>{
 function renderLog(){
     const s=(document.getElementById('logSearch')?.value||'').toLowerCase();
     const f=document.getElementById('logFilter')?.value||'all';
-    let fl=ops;
+    let fl=ops.map(_xferDisp);
     if(s)fl=fl.filter(o=>(o.c||'').toLowerCase().includes(s));
     if(f!=='all')fl=fl.filter(o=>o.t===f);
     const list=document.getElementById('logList');
@@ -1987,7 +1994,7 @@ window.sendCustomerLog=()=>{
     const user=document.getElementById('currentUserDisplay').textContent||'';
     const now=new Date().toLocaleDateString('ar-DZ',{year:'numeric',month:'long',day:'numeric'});
 
-    const rows=custOps.map((o,i)=>{
+    const rows=custOps.map(_xferDisp).map((o,i)=>{
         const out=outTypes.has(o.t);
         const unit=o.m==='دينار'?'DZD':o.m==='دولار'?'$':'g';
         const clr=typeColors[o.t]||(out?'#ef4444':'#22c55e');
@@ -2094,7 +2101,7 @@ function buildCustomerLogHtml(c,custOps){
             ✅ لا توجد أرصدة مستحقة — الحساب صافٍ</td>`;
 
     /* صفوف الجدول */
-    const rows=custOps.map((o,i)=>{
+    const rows=custOps.map(_xferDisp).map((o,i)=>{
         const out=outTypes.has(o.t);
         const unit=o.m==='دينار'?'DZD':o.m==='دولار'?'$':'g';
         const amtColor=out?'#dc2626':'#16a34a';

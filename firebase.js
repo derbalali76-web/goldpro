@@ -594,6 +594,7 @@ function _applyEvt(st,evt){
                 _ts:(disp.op&&disp.op._ts)||evt.ts||Date.now(),
                 dt:(disp.op&&disp.op.dt)||'',
                 xferFrom: d.from, xferInType: d.dstType,
+                xferPos: d.dstDelta>0,   /* عرض فقط: إن كان الهدف يدين لنا بالزيادة → «أعطيت» وإلا «استلمت» */
                 id: evt.id+'_in'
             });
             if(d.shipUsd){
