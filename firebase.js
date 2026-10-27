@@ -366,7 +366,8 @@ function _applyEvt(st,evt){
             /* سطر إضافيّ في سجلّ «من أخذه» */
             if(d.takenBy&&disp.op){
                 st.ops.push({
-                    c:d.takenBy, t:'استلمت', m:d.m, a:d.finalAmount,
+                    /* عرض فقط: الآخذ يزيد دينه (finalAmount) → «أعطيت» بالأحمر إن كان موجباً، وإلا «استلمت» */
+                    c:d.takenBy, t:(d.finalAmount>0?'أعطيت':'استلمت'), m:d.m, a:d.finalAmount,
                     _ts:(disp.op._ts||evt.ts||Date.now()),
                     dt:disp.op.dt||'', note:'عن طريق '+(d.c||''), id:evt.id+'_tb'
                 });
