@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v132';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v133';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -4095,10 +4095,28 @@ window.showDubaiMonth=(mKey)=>{
             _close(ov);
         }
     },true);
-    /* زر الرجوع في الأندرويد يغلق آخر نافذة مفتوحة */
+    /* ═══ زر الرجوع (أندرويد/المتصفح) يغلق آخر نافذة مفتوحة بدل الخروج ═══
+       الحيلة: كل نافذة تُفتح تدفع «فخّ» في سجلّ التصفّح، فيجد زر الرجوع ما يرجع إليه. */
+    const _openModals=()=>[...document.querySelectorAll('.modal-overlay.active')]
+        .filter(o=>o.id!=='loginOverlay'&&o.id!=='serialOverlay');
+    let _trapped=false, _fromPop=false;
+    function _syncTrap(){
+        const anyOpen=_openModals().length>0;
+        if(anyOpen&&!_trapped){ try{history.pushState({gpTrap:1},'');}catch(e){} _trapped=true; }
+        else if(!anyOpen&&_trapped&&!_fromPop){ _trapped=false; try{history.back();}catch(e){} }
+    }
+    try{ new MutationObserver(_syncTrap).observe(document.body,{attributes:true,subtree:true,attributeFilter:['class']}); }catch(e){}
     window.addEventListener('popstate',()=>{
-        const open=[...document.querySelectorAll('.modal-overlay.active')].pop();
-        if(open&&open.id!=='loginOverlay'&&open.id!=='serialOverlay')_close(open);
+        _fromPop=true;
+        const list=_openModals();
+        if(list.length){
+            _close(list[list.length-1]);     /* أغلق الأعلى */
+            _trapped=false;
+            _syncTrap();                      /* إن بقيت نوافذ، أعِد الفخّ لرجوع تالٍ */
+        }else{
+            _trapped=false;                   /* لا شيء ليُغلق — اترك التنقّل يمضي */
+        }
+        setTimeout(()=>{_fromPop=false;},0);
     });
 })();
 
