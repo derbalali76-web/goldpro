@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v130';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v132';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -3930,43 +3930,84 @@ function _mKeyOf(dt){
         if(mo)return `${m[3]}-${String(mo).padStart(2,'0')}`;}
     return null;
 }
+/* الفائدة الشهرية — طريقة حانوت يسين (الميزان المتطابق):
+   الفائدة = min(وزن البيع، وزن الشراء) للشهر × (متوسط سعر بيع الغرام − متوسط سعر شرائه)
+   كل القطع بمكافئ 730 · بيع دبي يُقوَّم بسعر الأرشيف (_dubaiPerGram) · الشراء يشمل شراء دبي. */
 window.showMonthlyProfit=(mKey)=>{
-    /* منطق المستخدم: الفائدة = القيمة الإجمالية للأصول (الآن) + قيمة شحن ميزان دبي */
-    const assets=net();                                   /* نقد + ذهب + دولار + ذهب دبي مقوّم */
-    /* شحن دبي = وزن الذهب في مكاتب دبي × سعر الشحن × سعر شراء الدولار */
-    let dubW=0; const _offs=new Set(); dubaiInvoices.forEach(i=>{ if(i.o)_offs.add(i.o); if(i.c)_offs.add(i.c); });
-    debts.forEach(d=>{ if(d.type==='ذهب 24'&&d.a>0.001&&_offs.has(d.c))dubW+=d.a; });
-    const _shipSp=(typeof _lastShipSp==='function')?_lastShipSp():0;
-    const _buyR=(dollarBuyRate>0?dollarBuyRate:dollarRate)||0;
-    const shipDubai=Math.round(dubW*_shipSp*_buyR/100);
-    const total=Math.round(assets)+shipDubai;
-    const bk=_netBuckets();
+    const _eq=(it)=>{ const e=Number(it.eq730); if(isFinite(e)&&e>0)return e; const w=Number(it.w)||0,k=Number(it.k)||730; return w*k/730; };
+    /* اجمع كل الشهور المتاحة من الفواتير وفواتير دبي */
+    const months=new Set();
+    (invoices||[]).forEach(v=>{ const k=_mKeyOf(v.dt); if(k)months.add(k); });
+    (dubaiInvoices||[]).forEach(d=>{ const k=_mKeyOf(d.dt); if(k)months.add(k); });
+    const mList=[...months].sort().reverse();
+    const mk=mKey||mList[0]||null;
+    const inM=dt=>mk&&_mKeyOf(dt)===mk;
+
+    /* طرفا التجارة بمكافئ 730 والدينار */
+    let sellW=0,sellDin=0, buyW=0,buyDin=0;
+    (invoices||[]).forEach(v=>{
+        if(!inM(v.dt))return;
+        (v.items||[]).forEach(it=>{
+            const e=_eq(it), tot=Number(it.total)|| (e*(Number(it.ppg)||0));
+            if(v.t==='sell'){ sellW+=e; sellDin+=tot; }
+            else if(v.t==='buy'){ buyW+=e; buyDin+=tot; }
+        });
+    });
+    /* دبي: بيع (DUB) على جهة البيع، شراء (DUBB/ buy) على جهة الشراء — بسعر الأرشيف */
+    (dubaiInvoices||[]).forEach(d=>{
+        if(!inM(d.dt))return;
+        const w=Number(d.w)||0; if(!w)return;
+        const r=(typeof _dubaiPerGram==='function')?_dubaiPerGram(d):null;
+        const pr=r&&isFinite(r.pr)?r.pr:0; if(!pr)return;     /* بلا سعر أرشيف صالح: نتخطّاها */
+        const e=w/0.730;                                      /* مكافئ 730 لذهب دبي */
+        if(d.buy){ buyW+=e; buyDin+=pr*e; } else { sellW+=e; sellDin+=pr*e; }
+    });
+
+    const avgSell = sellW>0 ? sellDin/sellW : 0;
+    const avgBuy  = buyW>0  ? buyDin/buyW  : 0;
+    const matchedW= Math.min(sellW,buyW);
+    const tradeProfit = Math.round(matchedW*(avgSell-avgBuy));
+    const remW    = sellW-buyW;                               /* + فائض بيع · − فائض شراء */
+    /* أجرة الرافيناج للشهر: تكلفة تدفعها أنت → تُخصم كخسارة */
+    let rafFee=0;
+    (rafInvoices||[]).forEach(r=>{ if(inM(r.dt))rafFee+=Number(r.fee)||0; });
+    rafFee=Math.round(rafFee);
+    const profit  = tradeProfit-rafFee;                       /* الفائدة الصافية بعد خصم الرافيناج */
+
     const f0=n=>Math.round(n).toLocaleString('fr-FR');
+    const mLabel=k=>{ const p=String(k||'').split('-'); return p.length===2?`${p[1]}/${p[0]}`:k; };
+    const monthBtns=mList.map(k=>`<button onclick="showMonthlyProfit('${k}')" style="flex:0 0 auto;padding:.3rem .6rem;border-radius:8px;font-family:inherit;font-size:.74rem;font-weight:800;cursor:pointer;border:1.5px solid ${k===mk?'#16a34a':'var(--border)'};background:${k===mk?'#16a34a':'transparent'};color:${k===mk?'#fff':'var(--t2)'}">${mLabel(k)}</button>`).join('');
+
     let m=document.getElementById('monthProfitModal');
     if(!m){m=document.createElement('div');m.id='monthProfitModal';m.className='modal-overlay';document.body.appendChild(m);}
     m.innerHTML=`<div class="modal-box" style="max-width:440px">
-      <div class="modal-header"><h3 style="font-size:.95rem">📈 الفائدة (قيمة الأصول + شحن دبي)</h3><button class="close-btn" onclick="closeModal('monthProfitModal')">✕</button></div>
+      <div class="modal-header"><h3 style="font-size:.95rem">📈 الفائدة الشهرية (الميزان المتطابق)</h3><button class="close-btn" onclick="closeModal('monthProfitModal')">✕</button></div>
       <div style="padding:.9rem;direction:rtl;text-align:right">
+        ${mList.length?`<div style="display:flex;gap:.35rem;overflow-x:auto;padding-bottom:.4rem;margin-bottom:.6rem">${monthBtns}</div>`:''}
+        ${!mk?'<div style="text-align:center;color:var(--t3);padding:1.5rem">لا توجد فواتير بعد</div>':`
         <div style="text-align:center;background:var(--card2);border-radius:14px;padding:.9rem;margin-bottom:.6rem">
-          <div style="font-size:.72rem;color:var(--t3)">الفائدة الكلية</div>
-          <div style="font-size:1.6rem;font-weight:900;color:${total>=0?'#16a34a':'#dc2626'}">${f0(total)} دج</div>
+          <div style="font-size:.72rem;color:var(--t3)">فائدة شهر ${mLabel(mk)}</div>
+          <div style="font-size:1.6rem;font-weight:900;color:${profit>=0?'#16a34a':'#dc2626'}">${f0(profit)} دج</div>
         </div>
-        <div style="background:var(--card2);border-radius:12px;padding:.7rem;margin-bottom:.5rem">
-          <div style="display:flex;justify-content:space-between;font-size:.8rem;font-weight:800"><span>📊 القيمة الإجمالية للأصول</span><span style="color:${assets>=0?'#16a34a':'#dc2626'}">${f0(assets)}</span></div>
-          <div style="font-size:.64rem;color:var(--t3);margin-top:.35rem;line-height:1.6">
-            ${Math.abs(bk.din)>1?`💵 ${f0(bk.din)} · `:''}${Math.abs(bk.dol)>1?`💲 ${f0(bk.dol)} · `:''}${Math.abs(bk.g730)>1?`🏅 ${f0(bk.g730)} · `:''}${Math.abs(bk.g24)>1?`💎 ${f0(bk.g24)}`:''}
-          </div>
+        <div style="background:var(--card2);border-radius:12px;padding:.7rem;margin-bottom:.5rem;font-size:.78rem">
+          <div style="display:flex;justify-content:space-between;margin-bottom:.3rem"><span style="color:var(--t2)">⚖️ الميزان المتطابق</span><strong>${fmt(matchedW,2)} غ</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:.3rem"><span style="color:var(--t2)">📈 متوسط سعر البيع/غ</span><strong style="color:#16a34a">${f0(avgSell)}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">📉 متوسط سعر الشراء/غ</span><strong style="color:#dc2626">${f0(avgBuy)}</strong></div>
         </div>
-        <div style="background:var(--card2);border-radius:12px;padding:.7rem">
-          <div style="display:flex;justify-content:space-between;font-size:.8rem;font-weight:800"><span>🚢 شحن ميزان دبي</span><span style="color:#16a34a">+ ${f0(shipDubai)}</span></div>
-          <div style="font-size:.64rem;color:var(--t3);margin-top:.35rem">${fmt(dubW,2)} غ × ${fmt(_shipSp,2)}$ × ${f0(_buyR/100)} (سعر شراء الدولار)</div>
+        <div style="background:var(--card2);border-radius:12px;padding:.7rem;font-size:.78rem;margin-bottom:.5rem">
+          <div style="display:flex;justify-content:space-between;margin-bottom:.3rem"><span style="color:var(--t2)">🤝 ربح التجارة (المتطابق)</span><strong style="color:${tradeProfit>=0?'#16a34a':'#dc2626'}">${f0(tradeProfit)}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--t2)">🔥 أجرة الرافيناج (خسارة)</span><strong style="color:#dc2626">− ${f0(rafFee)}</strong></div>
+        </div>
+        <div style="background:var(--card2);border-radius:12px;padding:.7rem;font-size:.74rem;color:var(--t2)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:.25rem"><span>مبيعات الشهر (مع دبي)</span><span>${fmt(sellW,2)} غ · ${f0(sellDin)} دج</span></div>
+          <div style="display:flex;justify-content:space-between"><span>مشتريات الشهر (مع دبي)</span><span>${fmt(buyW,2)} غ · ${f0(buyDin)} دج</span></div>
+          ${Math.abs(remW)>0.01?`<div style="margin-top:.35rem;color:var(--t3);font-size:.68rem">${remW>0?'فائض بيع غير مطابق':'فائض شراء غير مطابق'}: ${fmt(Math.abs(remW),2)} غ</div>`:''}
         </div>
         <div style="font-size:.64rem;color:var(--t3);margin-top:.6rem;line-height:1.7">
-          الفائدة = القيمة الإجمالية لأصولك الآن (نقد + ذهب مخزون + دولار + ذهب دبي مقوّماً بسعر الذهب) + قيمة شحن الذهب الموجود حالياً في دبي. رقم لحظي يعكس صافي ثروتك.
-        </div>
+          الفائدة = [المتطابق ${fmt(matchedW,2)}غ × (بيع ${f0(avgSell)} − شراء ${f0(avgBuy)})/غ] − أجرة الرافيناج ${f0(rafFee)}. كل القطع بمكافئ 730، وبيع دبي مقوَّم بسعر الأرشيف المحسوب.
+        </div>`}
       </div></div>`;
     m.classList.add('active');
-
 };
 
 /* ── أدوات الأدمين في ورقة التصفية: ضبط رصيد + إعادة تسمية ── */
