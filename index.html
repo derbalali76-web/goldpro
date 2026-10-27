@@ -12,15 +12,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#01406c">
     <title>Calculator</title>
-    <link rel="manifest" href="manifest.json?v=135">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=135">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=135">
+    <link rel="manifest" href="manifest.json?v=137">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=137">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=137">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/calc-180.png?v=135">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=135">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=135">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=135">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=135">
+    <link rel="apple-touch-icon" href="icons/calc-180.png?v=137">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=137">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=137">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=137">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=137">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -72,7 +72,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=135">
+    <link rel="stylesheet" href="./style.css?v=137">
 </head>
 <body>
 <!-- ═══════════ قناع الآلة الحاسبة (تصميم فاتح · الكود 0505 يكشف التطبيق) ═══════════ -->
@@ -585,11 +585,12 @@
     <div class="modal-handle"></div>
     <h3 id="invModalTitle">📋 المخزون</h3>
     <div class="infobox">عدد القطع: <strong id="invCount">0</strong> | الوزن: <strong id="invTotalW">0 g</strong></div>
-    <div id="meltToolbar" style="display:none;align-items:center;justify-content:space-between;gap:.5rem;background:rgba(234,88,12,.08);border:1px solid #ea580c;border-radius:10px;padding:.5rem .7rem;margin:.1rem 0 .5rem">
-        <span style="font-size:.8rem;color:#ea580c;font-weight:800">محدَّد للتذويب: <strong id="meltSelCount">0</strong></span>
-        <div style="display:flex;gap:.4rem">
+    <div id="meltToolbar" style="display:none;align-items:center;justify-content:space-between;gap:.5rem;background:rgba(234,88,12,.08);border:1px solid #ea580c;border-radius:10px;padding:.5rem .7rem;margin:.1rem 0 .5rem;flex-wrap:wrap">
+        <span style="font-size:.8rem;color:#ea580c;font-weight:800">محدَّد: <strong id="meltSelCount">0</strong></span>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap">
             <button onclick="_clearMeltSel()" style="background:transparent;border:1px solid var(--border);color:var(--t2);border-radius:8px;padding:.35rem .6rem;font-family:inherit;font-size:.78rem;cursor:pointer">إلغاء</button>
-            <button onclick="openMeltForm()" style="background:#ea580c;border:none;color:#fff;border-radius:8px;padding:.35rem .7rem;font-family:inherit;font-size:.78rem;font-weight:800;cursor:pointer">🔥 تذويب المحدَّد</button>
+            <button id="meltRafBtn" onclick="sendSelectedToRaf()" style="display:none;background:#ea580c;border:none;color:#fff;border-radius:8px;padding:.35rem .7rem;font-family:inherit;font-size:.78rem;font-weight:800;cursor:pointer">🔥 رافيناج المحدَّد</button>
+            <button onclick="openMeltForm()" style="background:#7c3aed;border:none;color:#fff;border-radius:8px;padding:.35rem .7rem;font-family:inherit;font-size:.78rem;font-weight:800;cursor:pointer">🫗 تذويب المحدَّد</button>
         </div>
     </div>
     <div id="invBarsList" style="max-height:45vh;overflow-y:auto"></div>
@@ -679,7 +680,7 @@
                 onkeydown="if(event.key==='Enter'){saveGT();event.preventDefault()}">
         </div>
         <div class="fg" id="gtKaratRow" style="display:none"><label>العيار</label>
-            <input type="number" id="gtKarat" value="730" min="1" max="999" step="1"
+            <input type="text" id="gtKarat" value="730" inputmode="decimal"
                 dir="ltr" style="text-align:right"
                 oninput="window.calcGTEq()"
                 onkeydown="if((event.key==='Enter'||event.key==='ArrowDown')&&gtType==='take'&&document.getElementById('gtMetal').value==='ذهب 730'){event.preventDefault();window._addGT730Bar(null,null,true);}else if(event.key==='Enter'){saveGT();event.preventDefault()}">
@@ -1012,13 +1013,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=135"></script>
-<script src="./app.js?v=135"></script>
-<script src="./assistant.js?v=135"></script>
-<script src="./inventory.js?v=135"></script>
-<script src="./invoice.js?v=135"></script>
-<script src="./raffinage.js?v=135"></script>
-<script src="./auth.js?v=135"></script>
+<script src="./firebase.js?v=137"></script>
+<script src="./app.js?v=137"></script>
+<script src="./assistant.js?v=137"></script>
+<script src="./inventory.js?v=137"></script>
+<script src="./invoice.js?v=137"></script>
+<script src="./raffinage.js?v=137"></script>
+<script src="./auth.js?v=137"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->

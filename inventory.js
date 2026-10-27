@@ -31,7 +31,23 @@ window._clearMeltSel=()=>{ window._meltSel.clear(); renderInvModal(); };
 function _updateMeltToolbar(){
     const tb=document.getElementById('meltToolbar'), n=window._meltSel.size;
     if(tb){ tb.style.display=n>0?'flex':'none'; const cEl=document.getElementById('meltSelCount'); if(cEl)cEl.textContent=n; }
+    /* زر «رافيناج المحدَّد» يظهر في مخزون 730 فقط */
+    const rb=document.getElementById('meltRafBtn');
+    if(rb)rb.style.display=(invType==='730'&&n>0)?'inline-block':'none';
 }
+/* إرسال كل السبائك المحدَّدة دفعة واحدة إلى جدول الرافيناج */
+window.sendSelectedToRaf=()=>{
+    if(invType!=='730')return;
+    const ids=[...window._meltSel].filter(id=>g730.some(b=>b.id===id)&&!_rafSentIds.has(id));
+    if(!ids.length){ toast('لا سبائك جديدة محدَّدة للرافيناج','info'); return; }
+    let added=0;
+    ids.forEach(id=>{ if(typeof sendBarToRaf==='function'){ sendBarToRaf('730',id,true); added++; } });
+    window._meltSel.clear();
+    renderInvModal();
+    closeModal('invModal');
+    if(typeof switchPage==='function')switchPage('raffinage');
+    toast(`🔥 أُضيفت ${added} سبيكة لجدول الرافيناج`,'success');
+};
 function renderInvModal(){
     const bars=invType==='24'?g24:g730;
     const tw=bars.reduce((s,b)=>s+(b.w||0),0);
@@ -260,7 +276,7 @@ window.confirmSell=()=>{
 };
 
 /* ═══════════ تحويل سبيكة مباشرة للرافيناج (بدون تنقل) ═══════════ */
-window.sendBarToRaf=(type,id)=>{
+window.sendBarToRaf=(type,id,silent)=>{
     const bars=type==='24'?g24:g730;
     const bar=bars.find(b=>b.id===id);
     if(!bar)return;
@@ -284,9 +300,11 @@ window.sendBarToRaf=(type,id)=>{
     /* تسجيل الـ ID لمنع الإضافة مرة ثانية */
     _rafSentIds.add(id);
     if(typeof _rafSentBars!=='undefined'&&!_rafSentBars.some(x=>x.id===id))_rafSentBars.push({id:bar.id,w:bar.w,k:bar.k||730});
-    renderInvModal();
-    /* رسالة تأكيد — بدون إغلاق المودال أو التنقل */
-    toast(`🔥 أُضيفت للرافيناج — الصف ${targetRow}`,'success');
+    if(!silent){
+        renderInvModal();
+        /* رسالة تأكيد — بدون إغلاق المودال أو التنقل */
+        toast(`🔥 أُضيفت للرافيناج — الصف ${targetRow}`,'success');
+    }
 };
 document.getElementById('sellAmount').addEventListener('input',function(){
     const a=parseFloat(this.value)||0,k=targetBar?.k||0,p=parseFloat(document.getElementById('sellPrice').value)||0;

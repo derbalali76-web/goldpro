@@ -818,7 +818,7 @@ window._addGT730Bar=(w,k,focusIt)=>{
     row.innerHTML=`
         <input type="text" inputmode="decimal" id="gt730W_${i}" placeholder="وزن إضافي (غ)" value="${w!=null?w:''}" dir="ltr" oninput="liveNum(this);window.calcGTEq()" onkeydown="window._gt730Nav(event,${i},'W')"
             style="flex:2;padding:.4rem;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--t);font-family:Tajawal,sans-serif;font-size:.74rem;font-weight:800;text-align:right">
-        <input type="text" inputmode="numeric" id="gt730K_${i}" placeholder="العيار" value="${k!=null?k:''}" dir="ltr" oninput="window.calcGTEq()" onkeydown="window._gt730Nav(event,${i},'K')"
+        <input type="text" inputmode="decimal" id="gt730K_${i}" placeholder="العيار" value="${k!=null?k:''}" dir="ltr" oninput="window.calcGTEq()" onkeydown="window._gt730Nav(event,${i},'K')"
             style="flex:1;padding:.4rem;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--t);font-family:Tajawal,sans-serif;font-size:.74rem;font-weight:800;text-align:center">
         <button type="button" onclick="document.getElementById('gt730Row_${i}').remove();window.calcGTEq()"
             style="border:none;background:transparent;color:var(--rd);cursor:pointer;font-size:.9rem;padding:.1rem .3rem">🗑️</button>`;
@@ -881,7 +881,7 @@ window.calcGTEq=()=>{
         }
     }
     const w=readNum('gtAmount');
-    const k=parseFloat(document.getElementById('gtKarat')?.value)||730;
+    const k=parseFloat(String(document.getElementById('gtKarat')?.value||'').replace(',','.'))||730;
     const pure=w*k/1000;
     document.getElementById('gtEqBox').innerHTML=
         `الوزن: <strong>${fmt(w,2)} غ</strong> | عيار: <strong>${k}</strong> | خالص م.24: <strong>${fmt(pure,3)} غ</strong>`;
@@ -898,7 +898,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v135';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v137';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -916,7 +916,7 @@ window.saveGT=()=>{
     const c=document.getElementById('gtCustomer').value.trim();
     const m=document.getElementById('gtMetal').value;
     const a=readNum('gtAmount');
-    const k=m==='ذهب 730'?(parseFloat(document.getElementById('gtKarat')?.value)||730):730;
+    const k=m==='ذهب 730'?(parseFloat(String(document.getElementById('gtKarat')?.value||'').replace(',','.'))||730):730;
     const isG730=m==='ذهب 730',isG24=m==='ذهب 24';
     /* استلام ذهب 730: قد يكون عدّة سبائك */
     let gt730Bars=null;
