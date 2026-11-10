@@ -905,7 +905,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v141';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v142';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1442,6 +1442,51 @@ window.saveTelegramConfig=()=>{
         localStorage.setItem('gp_tg_auto',auto?'1':'0');
     }catch(e){}
     toast((t&&c)?'✅ حُفظت إعدادات تلغرام':'تم مسح إعدادات تلغرام','success');
+};
+/* اكتشاف معرّف الدردشة: يقرأ آخر الرسائل التي استقبلها البوت ويعرض الدردشات المتاحة للاختيار */
+window.detectTelegramChat=async()=>{
+    const token=(document.getElementById('tgToken').value||'').trim()||localStorage.getItem('gp_tg_token')||'';
+    const box=document.getElementById('tgChatPick');
+    if(!token){ toast('⚠️ أدخل رمز البوت أولاً','error'); return; }
+    toast('🔍 جاري البحث عن الدردشات...','info');
+    try{
+        const r=await fetch('https://api.telegram.org/bot'+token+'/getUpdates?limit=100');
+        const j=await r.json().catch(()=>({}));
+        if(!r.ok||!j.ok){ toast('❌ '+((j&&j.description)||'رمز البوت غير صحيح'),'error'); return; }
+        const seen=new Map();
+        (j.result||[]).forEach(u=>{
+            const m=u.message||u.channel_post||u.edited_message||u.edited_channel_post||u.my_chat_member||u.chat_member;
+            const ch=m&&m.chat; if(!ch) return;
+            const id=String(ch.id);
+            const title=ch.title||[ch.first_name,ch.last_name].filter(Boolean).join(' ')||ch.username||id;
+            seen.set(id,{id,title,type:ch.type});
+        });
+        if(!seen.size){
+            if(box)box.innerHTML='';
+            toast('لم يُعثر على دردشات — أضف البوت إلى القناة/المجموعة وأرسل فيها رسالة ثم حاول مجدداً','info');
+            return;
+        }
+        const list=[...seen.values()];
+        if(list.length===1){
+            document.getElementById('tgChat').value=list[0].id;
+            if(box)box.innerHTML='';
+            toast('✅ وُجد المعرّف: '+list[0].title,'success');
+            return;
+        }
+        if(box){
+            box.innerHTML='<div style="font-size:.68rem;color:var(--t2);margin-bottom:.3rem;text-align:right">اختر الدردشة:</div>'+
+                list.map(c=>`<button onclick="_pickTgChat('${c.id}')" style="display:block;width:100%;margin-bottom:.3rem;padding:.45rem;border-radius:8px;border:1px solid #229ED9;background:rgba(34,158,217,.08);color:var(--t);cursor:pointer;font-family:Tajawal,Arial,sans-serif;font-size:.74rem;text-align:right">${c.title} <span style="color:var(--t3)">(${c.type})</span></button>`).join('');
+        }
+        window._tgFound=list;
+    }catch(e){
+        toast('❌ تعذّر الاتصال بتلغرام — تحقّق من الإنترنت','error');
+    }
+};
+window._pickTgChat=(id)=>{
+    const c=(window._tgFound||[]).find(x=>x.id===String(id));
+    document.getElementById('tgChat').value=String(id);
+    const box=document.getElementById('tgChatPick'); if(box)box.innerHTML='';
+    toast('✅ اخترت: '+(c?c.title:id),'success');
 };
 window.onBarPhoto=(e)=>{
     const file=e.target.files&&e.target.files[0]; if(!file)return; e.target.value='';

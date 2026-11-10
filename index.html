@@ -12,15 +12,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#01406c">
     <title>Calculator</title>
-    <link rel="manifest" href="manifest.json?v=141">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=141">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=141">
+    <link rel="manifest" href="manifest.json?v=142">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=142">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=142">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/calc-180.png?v=141">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=141">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=141">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=141">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=141">
+    <link rel="apple-touch-icon" href="icons/calc-180.png?v=142">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=142">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=142">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=142">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=142">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -72,7 +72,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=141">
+    <link rel="stylesheet" href="./style.css?v=142">
 </head>
 <body>
 <!-- ═══════════ قناع الآلة الحاسبة (تصميم فاتح · الكود 0505 يكشف التطبيق) ═══════════ -->
@@ -975,6 +975,8 @@
         <label style="display:block;font-size:.68rem;color:var(--t2);margin-bottom:.2rem;text-align:right">معرّف الدردشة (Chat ID)</label>
         <input type="text" id="tgChat" placeholder="-100123456789" autocomplete="off" dir="ltr"
             style="width:100%;box-sizing:border-box;padding:.5rem;border:1.5px solid var(--border);border-radius:8px;font-family:monospace;font-size:.74rem;background:var(--card);color:var(--t);margin-bottom:.4rem">
+        <button onclick="detectTelegramChat()" style="width:100%;padding:.45rem;border-radius:8px;border:1.5px dashed #229ED9;background:transparent;color:#229ED9;font-weight:800;cursor:pointer;font-family:Tajawal,"Noto Kufi Arabic","Noto Naskh Arabic",Arial,sans-serif;font-size:.74rem;margin-bottom:.4rem">🔍 اكتشاف المعرّف تلقائياً</button>
+        <div id="tgChatPick" style="margin-bottom:.4rem"></div>
         <label style="display:flex;align-items:center;gap:.4rem;font-size:.74rem;color:var(--t2);margin-bottom:.5rem;cursor:pointer;justify-content:flex-end">
             إرسال تلقائي كل ساعتين
             <input type="checkbox" id="tgAuto" style="width:18px;height:18px;accent-color:#229ED9">
@@ -1031,13 +1033,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=141"></script>
-<script src="./app.js?v=141"></script>
-<script src="./assistant.js?v=141"></script>
-<script src="./inventory.js?v=141"></script>
-<script src="./invoice.js?v=141"></script>
-<script src="./raffinage.js?v=141"></script>
-<script src="./auth.js?v=141"></script>
+<script src="./firebase.js?v=142"></script>
+<script src="./app.js?v=142"></script>
+<script src="./assistant.js?v=142"></script>
+<script src="./inventory.js?v=142"></script>
+<script src="./invoice.js?v=142"></script>
+<script src="./raffinage.js?v=142"></script>
+<script src="./auth.js?v=142"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->
