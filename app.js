@@ -529,6 +529,13 @@ function openSettings(){
     if(ap)ap.style.display=isAdmin?'block':'none';
     if(isAdmin)renderUsersList();
     try{ const vi=document.getElementById('visionKeyInput'); if(vi)vi.value=_getVisionKey(); }catch(e){}
+    /* إعدادات تلغرام */
+    try{
+        const tt=document.getElementById('tgToken'), tc=document.getElementById('tgChat'), ta=document.getElementById('tgAuto');
+        if(tt)tt.value=localStorage.getItem('gp_tg_token')||'';
+        if(tc)tc.value=localStorage.getItem('gp_tg_chat')||'';
+        if(ta)ta.checked=localStorage.getItem('gp_tg_auto')==='1';
+    }catch(e){}
     document.getElementById('settingsModal').classList.add('active');
     setTimeout(()=>document.getElementById('settingGoldPrice').focus(),320);
 }
@@ -898,7 +905,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v139';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v141';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1424,6 +1431,17 @@ window.saveVisionKey=()=>{
     }else{
         toast(v?'✅ حُفظ المفتاح':'تم مسح المفتاح','info');
     }
+};
+window.saveTelegramConfig=()=>{
+    const t=(document.getElementById('tgToken').value||'').trim();
+    const c=(document.getElementById('tgChat').value||'').trim();
+    const auto=!!(document.getElementById('tgAuto')&&document.getElementById('tgAuto').checked);
+    try{
+        localStorage.setItem('gp_tg_token',t);
+        localStorage.setItem('gp_tg_chat',c);
+        localStorage.setItem('gp_tg_auto',auto?'1':'0');
+    }catch(e){}
+    toast((t&&c)?'✅ حُفظت إعدادات تلغرام':'تم مسح إعدادات تلغرام','success');
 };
 window.onBarPhoto=(e)=>{
     const file=e.target.files&&e.target.files[0]; if(!file)return; e.target.value='';

@@ -977,21 +977,71 @@ function importData(e){
     e.target.value='';
 }
 
+/* ═══════════ TELEGRAM AUTO-SEND ═══════════ */
+const _TG_TOKEN_KEY='gp_tg_token', _TG_CHAT_KEY='gp_tg_chat', _TG_AUTO_KEY='gp_tg_auto';
+function _tgGet(k){ try{return localStorage.getItem(k)||'';}catch(e){return '';} }
+function _tgConfigured(){ return !!(_tgGet(_TG_TOKEN_KEY)&&_tgGet(_TG_CHAT_KEY)); }
+function _tgAutoOn(){ return _tgGet(_TG_AUTO_KEY)==='1' && _tgConfigured(); }
+/* يبني نفس النسخة الاحتياطية المشفّرة المستخدَمة في التصدير */
+function _buildBackupBlob(){
+    const dataObj={events:_allEvents,_exported:Date.now(),_user:_currentUser};
+    const out=_encKey?_encryptBackup(dataObj):JSON.stringify(dataObj,null,2);
+    return new Blob([out],{type:'application/json'});
+}
+/* يرسل النسخة الاحتياطية كملف إلى دردشة تلغرام عبر بوت. silent=true يكتم الرسائل (للإرسال التلقائي) */
+async function sendTelegramBackup(silent){
+    const token=_tgGet(_TG_TOKEN_KEY), chat=_tgGet(_TG_CHAT_KEY);
+    if(!token||!chat){ if(!silent)toast('⚠️ أدخل رمز البوت ومعرّف الدردشة أولاً','error'); return false; }
+    if(!_allEvents||!_allEvents.length){ if(!silent)toast('لا توجد بيانات للإرسال','info'); return false; }
+    try{
+        if(!silent)toast('📤 جاري الإرسال إلى تلغرام...','info');
+        const blob=_buildBackupBlob();
+        const dt=new Date().toLocaleDateString('fr-FR').replace(/\//g,'-');
+        const fname=`GoldPro_${_currentUser}_${dt}.json`;
+        const fd=new FormData();
+        fd.append('chat_id',chat);
+        fd.append('caption','🔒 نسخة GoldPro — '+(_currentUser||'')+' — '+new Date().toLocaleString('fr-FR'));
+        fd.append('document',blob,fname);
+        const r=await fetch('https://api.telegram.org/bot'+token+'/sendDocument',{method:'POST',body:fd});
+        const j=await r.json().catch(()=>({}));
+        if(r.ok&&j&&j.ok){
+            try{localStorage.setItem(_BACKUP_KEY+'_'+_currentUser,Date.now().toString());}catch(e){}
+            if(!silent)toast('✅ أُرسلت النسخة إلى تلغرام','success');
+            return true;
+        }
+        if(!silent)toast('❌ فشل الإرسال: '+((j&&j.description)||'تحقّق من الرمز والمعرّف'),'error');
+        return false;
+    }catch(e){
+        if(!silent)toast('❌ تعذّر الاتصال بتلغرام — تحقّق من الإنترنت','error');
+        return false;
+    }
+}
+window.sendTelegramBackup=sendTelegramBackup;
+window._tgConfigured=_tgConfigured;
+
 /* ═══════════ AUTO BACKUP ═══════════ */
 const _BACKUP_KEY='gp12_lastBackup';
+/* فترة النسخ: ساعتان عند تفعيل تلغرام التلقائي، وإلا 12 ساعة (تنزيل ملف) */
+function _backupIntervalMs(){ return _tgAutoOn()?(2*3600*1000):(12*3600*1000); }
 function _startAutoBackup(){
     setTimeout(()=>{
         const last=parseInt(localStorage.getItem(_BACKUP_KEY+'_'+_currentUser)||'0',10);
-        if(Date.now()-last>12*3600*1000||!last)_doAutoBackup();
+        if(Date.now()-last>_backupIntervalMs()||!last)_doAutoBackup();
     },60*1000);
     setInterval(()=>{
         const last=parseInt(localStorage.getItem(_BACKUP_KEY+'_'+_currentUser)||'0',10);
-        if(Date.now()-last>12*3600*1000)_doAutoBackup();
-    },3600*1000);
+        if(Date.now()-last>_backupIntervalMs())_doAutoBackup();
+    },10*60*1000);
 }
 function _doAutoBackup(){
     try{
         if(!_allEvents.length)return;
+        /* تلغرام مُفعَّل ومضبوط → أرسل النسخة تلقائياً بدل تنزيل ملف على الجهاز */
+        if(_tgAutoOn()){
+            try{localStorage.setItem(_BACKUP_KEY+'_'+_currentUser,Date.now().toString());}catch(e){}
+            sendTelegramBackup(true);
+            return;
+        }
         const dataObj={events:_allEvents,_exported:Date.now(),_user:_currentUser};
         const out=_encKey?_encryptBackup(dataObj):JSON.stringify(dataObj,null,2);
         const blob=new Blob([out],{type:'application/json'});
