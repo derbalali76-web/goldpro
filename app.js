@@ -905,7 +905,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v142';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v144';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1431,6 +1431,73 @@ window.saveVisionKey=()=>{
     }else{
         toast(v?'✅ حُفظ المفتاح':'تم مسح المفتاح','info');
     }
+};
+/* ═══════════ تحويل ذهب البيع لرأس المال (حساب «حانوت» بمكافئ 24 بالسالب) ═══════════ */
+function _goldSaleTotal730(){
+    const bk=_netBuckets();
+    const tb=(typeof _tarbahTotalW==='function')?_tarbahTotalW():0;
+    return bk.raw_730 + bk.raw_24*(1000/730) + tb;
+}
+function _ensureToCapModal(){
+    if(document.getElementById('toCapModal'))return;
+    const div=document.createElement('div');
+    div.className='modal-overlay'; div.id='toCapModal';
+    div.innerHTML=`<div class="modal" style="max-width:420px">
+        <div class="modal-handle"></div>
+        <h3 style="font-size:.95rem">🏦 تحويل ذهب البيع لرأس المال</h3>
+        <div style="background:var(--card2);border-radius:8px;padding:.6rem;margin-bottom:.6rem;font-size:.82rem;display:flex;justify-content:space-between">
+            <span style="color:var(--t2)">ذهب البيع الحالي</span><strong id="tcAvail" style="color:var(--g400)"></strong>
+        </div>
+        <label style="font-size:.78rem;color:var(--t2);display:block;margin-bottom:.3rem">الوزن المراد تحويله (غ عيار 730)</label>
+        <input id="tcW" type="text" inputmode="decimal" dir="ltr" oninput="liveNum(this);_tcCalc()"
+            style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:inherit;text-align:right;box-sizing:border-box;margin-bottom:.5rem">
+        <label style="font-size:.78rem;color:var(--t2);display:block;margin-bottom:.3rem">حساب رأس المال</label>
+        <input id="tcCust" type="text" oninput="_tcCalc()"
+            style="width:100%;padding:.6rem;border:1.5px solid var(--border);border-radius:8px;font-size:.95rem;font-family:inherit;box-sizing:border-box;margin-bottom:.5rem">
+        <div id="tcPreview" style="font-size:.78rem;line-height:1.8;background:var(--card2);border-radius:8px;padding:.6rem;margin-bottom:.6rem"></div>
+        <div class="mactions">
+            <button class="bgy" onclick="closeModal('toCapModal')">إلغاء</button>
+            <button class="bg" onclick="confirmToCapital()">✅ تحويل</button>
+        </div>
+    </div>`;
+    document.body.appendChild(div);
+    try{ if(typeof window._acAttach==='function')window._acAttach('tcCust'); }catch(e){}
+}
+window.openToCapital=()=>{
+    _ensureToCapModal();
+    const tot=_goldSaleTotal730();
+    document.getElementById('tcAvail').textContent=fmt(tot,2)+' غ (730)';
+    document.getElementById('tcW').value=tot>0?String(Math.round(tot*100)/100).replace('.',','):'';
+    const cu=document.getElementById('tcCust'); if(!cu.value)cu.value='حانوت';
+    _tcCalc();
+    document.getElementById('toCapModal').classList.add('active');
+    setTimeout(()=>{const w=document.getElementById('tcW'); if(w){w.focus(); try{w.select();}catch(e){}}},320);
+};
+window._tcCalc=()=>{
+    const w=readNum('tcW')||0;
+    const c=(document.getElementById('tcCust').value||'').trim();
+    const pv=document.getElementById('tcPreview'); if(!pv)return;
+    if(w<=0||!c){pv.innerHTML='<span style="color:var(--t3)">أدخل الوزن واسم الحساب</span>';return;}
+    const w24=w*730/1000;
+    const before=getCustBal(c,'ذهب 24'), after=before-w24;
+    const tot=_goldSaleTotal730();
+    const lb=v=>v<-0.001?`<span style="color:#16a34a">${fmt(v,3)}</span>`:v>0.001?`<span style="color:#dc2626">${fmt(v,3)}</span>`:'0';
+    pv.innerHTML=`🔄 المكافئ: ${fmt(w,2)} غ 730 × 730 ÷ 1000 = <b>${fmt(w24,3)} غ 24</b><br>`+
+        `🏦 ${c} (ذهب 24): ${lb(before)} ← <b>${lb(after)}</b><br>`+
+        `🪙 ذهب البيع: ${fmt(tot,2)} ← <b>${fmt(tot-w,2)} غ</b>`;
+};
+window.confirmToCapital=()=>{
+    const w=readNum('tcW');
+    const c=(document.getElementById('tcCust').value||'').trim();
+    if(!w||w<=0){toast('⚠️ أدخل الوزن','error');return;}
+    if(!c){toast('⚠️ أدخل اسم الحساب','error');return;}
+    const w24=Math.round(w*730/1000*1000)/1000;
+    const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    emitEvent('TO_CAPITAL',{c,w730:w,w24},
+        {op:{c,t:'تحويل لرأس المال',m:'ذهب 24',a:w24,_ts:Date.now(),dt:nowStr,
+             note:'من ذهب البيع: '+fmt(w,2)+' غ 730 = '+fmt(w24,3)+' غ 24'}});
+    closeModal('toCapModal');
+    toast(`🏦 حُوّل ${fmt(w,2)} غ (730) = ${fmt(w24,3)} غ 24 إلى ${c}`,'success');
 };
 window.saveTelegramConfig=()=>{
     const t=(document.getElementById('tgToken').value||'').trim();
@@ -2368,10 +2435,14 @@ function _renderSettleRows(){
     const decs={دينار:0,دولار:2,'أورو':2,'ذهب 730':2,'ذهب 24':2};
     const active=Object.entries(cd).filter(([,v])=>Math.abs(v)>0.001);
     const buyGoldBox=`<div style="margin-top:.7rem;padding-top:.7rem;border-top:1px dashed var(--border)">
-        <div style="font-size:.72rem;color:var(--t3);margin-bottom:.4rem">🛒 شراء ذهب من الزبون (حتى بلا رصيد):</div>
+        <div style="font-size:.72rem;color:var(--t3);margin-bottom:.4rem">🛒 شراء / 💰 بيع ذهب (حتى بلا رصيد):</div>
         <div style="display:flex;gap:.4rem">
             <button class="btn-settle" style="flex:1;background:rgba(16,185,129,.12);color:#059669;border-color:#059669" onclick="_openGoldSettleModal('ذهب 730',true)">🛒 شراء 730</button>
             <button class="btn-settle" style="flex:1;background:rgba(16,185,129,.12);color:#059669;border-color:#059669" onclick="_openGoldSettleModal('ذهب 24',true)">🛒 شراء 24</button>
+        </div>
+        <div style="display:flex;gap:.4rem;margin-top:.4rem">
+            <button class="btn-settle" style="flex:1;background:rgba(220,38,38,.1);color:#dc2626;border-color:#dc2626" onclick="_openGoldSettleModal('ذهب 730',false,true)">💰 بيع 730</button>
+            <button class="btn-settle" style="flex:1;background:rgba(220,38,38,.1);color:#dc2626;border-color:#dc2626" onclick="_openGoldSettleModal('ذهب 24',false,true)">💰 بيع 24</button>
         </div>
         <div style="font-size:.72rem;color:var(--t3);margin:.55rem 0 .4rem">💲 بيع / شراء دولار مع الزبون:</div>
         <div style="display:flex;gap:.4rem">
@@ -2755,7 +2826,7 @@ window.settleAll=()=>{
 };
 
 /* ═══════════ GOLD SETTLE WITH PRICE + INVOICE ═══════════ */
-let _gsType='',_gsNet=0,_gsCustomer='',_gsForceBuy=false;
+let _gsType='',_gsNet=0,_gsCustomer='',_gsForceBuy=false,_gsForceSell=false;
 
 function _ensureGoldSettleModal(){
     if(document.getElementById('goldSettleModal'))return;
@@ -2795,17 +2866,18 @@ function _ensureGoldSettleModal(){
     document.body.appendChild(div);
 }
 
-function _openGoldSettleModal(type,forceBuy){
+function _openGoldSettleModal(type,forceBuy,forceSell){
     const net=debts.filter(x=>x.c===_settleCustomer&&x.type===type).reduce((s,x)=>s+(x.a||0),0);
-    if(Math.abs(net)<0.001&&!forceBuy){toast('لا توجد أرصدة','info');return;}
+    if(Math.abs(net)<0.001&&!forceBuy&&!forceSell){toast('لا توجد أرصدة','info');return;}
     _ensureGoldSettleModal();
-    _gsType=type; _gsNet=net; _gsCustomer=_settleCustomer; _gsForceBuy=!!forceBuy;
-    const isBuy=forceBuy?true:(net<0);
+    _gsType=type; _gsNet=net; _gsCustomer=_settleCustomer; _gsForceBuy=!!forceBuy; _gsForceSell=!!forceSell;
+    const isBuy=forceSell?false:(forceBuy?true:(net<0));
     const icon=isBuy?'🛒':'💰';
     const action=isBuy?'شراء':'بيع';
+    const free=(forceBuy||forceSell)&&Math.abs(net)<0.001;
     document.getElementById('gsmTitle').textContent=`${icon} ${action} ${type} — ${_settleCustomer}`;
-    document.getElementById('gsmQty').textContent=(forceBuy&&Math.abs(net)<0.001)?'شراء حر':fmt(Math.abs(net),3)+' غ';
-    document.getElementById('gsmPartialW').value=(forceBuy&&Math.abs(net)<0.001)?'':Math.abs(net).toString().replace('.',',');
+    document.getElementById('gsmQty').textContent=free?(forceSell?'بيع حر':'شراء حر'):fmt(Math.abs(net),3)+' غ';
+    document.getElementById('gsmPartialW').value=free?'':Math.abs(net).toString().replace('.',',');
     document.getElementById('gsmPrice').value='';
     document.getElementById('gsmTotalBox').style.display='none';
     document.getElementById('goldSettleModal').classList.add('active');
@@ -2821,13 +2893,16 @@ window._gsmCalc=function(){
     if(ppg>0&&w>0){
         box.style.display='flex';
         document.getElementById('gsmTotal').textContent=fmt(total,0)+' دج';
-        const net=_gsNet, isBuy=_gsForceBuy?true:(net<0);
+        const net=_gsNet, isBuy=_gsForceSell?false:(_gsForceBuy?true:(net<0));
         let prev=document.getElementById('gsmDirPreview');
         if(!prev){prev=document.createElement('div');prev.id='gsmDirPreview';prev.style.cssText='font-size:.72rem;line-height:1.7;background:var(--card2);border-radius:8px;padding:.55rem;margin-top:.1rem';box.parentNode.insertBefore(prev,box.nextSibling);}
         let cashTxt,gTxt;
         if(_gsForceBuy){
             cashTxt=`ستدين للزبون بـ <b>${fmt(total,0)} دج</b>`;
             gTxt=`الزبون سيدين لك <b>${fmt(w,3)} غ</b> ذهب`;
+        }else if(_gsForceSell){
+            cashTxt=`الزبون سيدين لك بـ <b>${fmt(total,0)} دج</b>`;
+            gTxt=`ستدين للزبون <b>${fmt(w,3)} غ</b> ذهب`;
         }else{
             const goldNew=net>0?(net-w):(net+w);
             cashTxt=isBuy?`ستدين للزبون بـ <b>${fmt(total,0)} دج</b>`:`الزبون سيدين لك بـ <b>${fmt(total,0)} دج</b>`;
@@ -2847,13 +2922,14 @@ window._gsmConfirm=function(){
     if(!w||w<=0){toast('⚠️ أدخل كمية التصفية','error');return;}
     const type=_gsType, net=_gsNet, c=_gsCustomer;
     if(w<0.001){closeModal('goldSettleModal');return;}
-    const isBuy=_gsForceBuy?true:(net<0);
+    const isBuy=_gsForceSell?false:(_gsForceBuy?true:(net<0));
     const k=type==='ذهب 24'?1000:730;
     const eq730=w*(k/730);
     const total=Math.round(eq730*ppg);
     const prevBal=getCustBal(c,'دينار');
     const iid='INV-'+uid();
-    const cashTotal=_gsForceBuy?-total:(isBuy?-total:total); /* شراء حر: أنا مدين للزبون بالنقد (−) */
+    /* شراء حر: أنا مدين للزبون بالنقد (−) · بيع حر: الزبون مدين لي بالنقد (+) */
+    const cashTotal=_gsForceBuy?-total:(_gsForceSell?total:(isBuy?-total:total));
     const settledAmt=isBuy?-w:w;
     const remaining=parseFloat((Math.abs(net)-w).toFixed(4));
     const item={w,k,ppg,eq730,total,is1000:k===1000,sbt:type==='ذهب 24'?'24':'730'};
@@ -2861,12 +2937,13 @@ window._gsmConfirm=function(){
         id:iid,c,t:isBuy?'buy':'sell',ps:'debt',
         dt:new Date().toLocaleDateString('fr-FR'),
         items:[item],tp:total,akhd:0,prevBal,
-        note:_gsForceBuy?'شراء ذهب من الزبون':(remaining>0.001?`تصفية جزئية (باقٍ ${fmt(remaining,3)} غ)`:'تصفية ديون')
+        note:_gsForceBuy?'شراء ذهب من الزبون':(_gsForceSell?'بيع ذهب للزبون (بلا رصيد)':(remaining>0.001?`تصفية جزئية (باقٍ ${fmt(remaining,3)} غ)`:'تصفية ديون'))
     };
     const nowStr=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    const _free=_gsForceBuy||_gsForceSell;
     emitEvent('SETTLE_GSM',
-        {c,type,net,isBuy,cashTotal,remaining,w,k,ppg,iid,freeBuy:_gsForceBuy},
-        {invoice:_inv,op:{c,t:_gsForceBuy?'شراء':'تصفية',m:type,a:settledAmt,_ts:Date.now(),dt:nowStr,cashSettle:true,iid,cashTotal,partial:remaining>0.001}}
+        {c,type,net,isBuy,cashTotal,remaining,w,k,ppg,iid,freeBuy:_free,sellFree:!!_gsForceSell},
+        {invoice:_inv,op:{c,t:_gsForceBuy?'شراء':(_gsForceSell?'بيع':'تصفية'),m:type,a:settledAmt,_ts:Date.now(),dt:nowStr,cashSettle:true,iid,cashTotal,partial:remaining>0.001}}
     );
     closeModal('goldSettleModal');
     _renderSettleRows();

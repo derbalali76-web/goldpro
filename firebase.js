@@ -524,8 +524,10 @@ function _applyEvt(st,evt){
         case 'SETTLE_GSM':{
             const {c,type,net,isBuy,cashTotal,remaining}=d;
             if(d.freeBuy){
-                /* شراء حرّ: الزبون مدين لك بالذهب (+) ، وأنا مدين للزبون بالنقد (−) */
-                stUpdDebt(c,type,d.w);
+                /* شراء حرّ: الزبون مدين لك بالذهب (+) ، وأنا مدين للزبون بالنقد (−)
+                   بيع حرّ (sellFree): المعكوس تماماً — ذهب (−) ونقد (+) */
+                const _sg=d.sellFree?-1:1;
+                stUpdDebt(c,type,_sg*d.w);
                 stUpdDebt(c,'دينار',cashTotal);
             }else{
                 if(!isBuy)applyBars();
@@ -613,6 +615,12 @@ function _applyEvt(st,evt){
             /* تعديل سعر صرف فاتورة دبي رجعياً */
             const inv=st.dubaiInvoices.find(x=>x.id===d.did);
             if(inv&&Number(d.rate)>0)inv.rate=Number(d.rate);
+            break;
+        }
+
+        case 'TO_CAPITAL':{
+            /* تحويل ذهب البيع لرأس المال: مكافئ 24 يُضاف بالسالب لحساب «حانوت» (لا يمسّ المخزون) */
+            stUpdDebt(d.c,'ذهب 24',-d.w24);
             break;
         }
 
@@ -1079,7 +1087,7 @@ window._trashList=()=>{
         if(t){
             const dsp=t.display||{}, dd=t.data||{};
             const inv=dsp.invoice||dsp.dollInvoice||dsp.rafInvoice||dsp.dubaiInvoice;
-            const typeMap={INVOICE_BUY:'فاتورة شراء',INVOICE_SELL:'فاتورة بيع',RAF:'رافيناج',DUBAI:'بيع دبي',DOLLAR:'دولار',GT:(dd.gtType==='give'?'تسليم':'استلام'),SHIP:'شحن',EXPENSE:'مصاريف',SETTLE:'تصفية',SETTLE_GSM:(dd.freeBuy?'شراء حر':'تصفية ذهب'),XFER:'تحويل',LOAN:'سلف',SELL:'بيع سبيكة',OPENING:'رصيد افتتاحي',DEBT_FIX:'ضبط رصيد',VOID:'حذف (استرجاع سابق)'};
+            const typeMap={INVOICE_BUY:'فاتورة شراء',INVOICE_SELL:'فاتورة بيع',RAF:'رافيناج',DUBAI:'بيع دبي',DOLLAR:'دولار',GT:(dd.gtType==='give'?'تسليم':'استلام'),SHIP:'شحن',EXPENSE:'مصاريف',SETTLE:'تصفية',SETTLE_GSM:(dd.sellFree?'بيع حر':dd.freeBuy?'شراء حر':'تصفية ذهب'),XFER:'تحويل',LOAN:'سلف',SELL:'بيع سبيكة',OPENING:'رصيد افتتاحي',DEBT_FIX:'ضبط رصيد',TO_CAPITAL:'تحويل لرأس المال',VOID:'حذف (استرجاع سابق)'};
             const who=(dsp.op&&dsp.op.c)||(inv&&(inv.c||inv.o))||dd.c||dd.o||'';
             const amt=(dsp.op&&dsp.op.a)!=null?(dsp.op.a):(inv&&(inv.tp!=null?inv.tp:inv.usd));
             desc=(typeMap[t.type]||t.type)+(who?' — '+who:'')+(amt!=null?' — '+Number(amt).toLocaleString('fr-FR',{maximumFractionDigits:2}):'');
