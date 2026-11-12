@@ -28,8 +28,24 @@ window._toggleMeltSel=(id)=>{
     _updateMeltToolbar();
 };
 window._clearMeltSel=()=>{ window._meltSel.clear(); renderInvModal(); };
+/* تحديد كل السبائك بزر واحد (أو إلغاء تحديدها كلها إن كانت محدَّدة) */
+window._toggleSelectAllBars=()=>{
+    const bars=invType==='24'?g24:g730;
+    const allSel=bars.length>0&&bars.every(b=>window._meltSel.has(b.id));
+    if(allSel)window._meltSel.clear();
+    else bars.forEach(b=>window._meltSel.add(b.id));
+    renderInvModal();
+};
 function _updateMeltToolbar(){
     const tb=document.getElementById('meltToolbar'), n=window._meltSel.size;
+    /* زر «تحديد الكل»: يظهر عند وجود سبائك، ونصّه يتبدّل حسب الحالة */
+    const sa=document.getElementById('invSelAllBtn');
+    if(sa){
+        const bars=invType==='24'?g24:g730;
+        sa.style.display=bars.length?'block':'none';
+        const allSel=bars.length>0&&bars.every(b=>window._meltSel.has(b.id));
+        sa.textContent=allSel?'✖️ إلغاء تحديد الكل':`☑️ تحديد الكل (${bars.length})`;
+    }
     if(tb){ tb.style.display=n>0?'flex':'none'; const cEl=document.getElementById('meltSelCount'); if(cEl)cEl.textContent=n; }
     /* زر «رافيناج المحدَّد» يظهر في مخزون 730 فقط */
     const rb=document.getElementById('meltRafBtn');
