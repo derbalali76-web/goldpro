@@ -12,15 +12,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#01406c">
     <title>Calculator</title>
-    <link rel="manifest" href="manifest.json?v=146">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=146">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=146">
+    <link rel="manifest" href="manifest.json?v=147">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=147">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=147">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/calc-180.png?v=146">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=146">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=146">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=146">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=146">
+    <link rel="apple-touch-icon" href="icons/calc-180.png?v=147">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=147">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=147">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=147">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=147">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -72,7 +72,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=146">
+    <link rel="stylesheet" href="./style.css?v=147">
 </head>
 <body>
 <!-- ═══════════ قناع الآلة الحاسبة (تصميم فاتح · الكود 0505 يكشف التطبيق) ═══════════ -->
@@ -164,8 +164,7 @@
     <div class="hdr">
         <div class="brand">
             <div class="logo">🪙</div>
-            <div class="brand-text"><h2>GoldPro</h2><span>نظام الذهب والدولار</span></div>
-        </div>
+                    </div>
         <div class="hdr-center-wrap" id="hdrCenterWrap">
             <div class="price-ball" id="priceBall" onclick="if(!window._badgeDragMoved)window._togglePricePop()" title="اضغط لعرض السعر اللحظي وسعر بيع دبي — اسحب لتحريكها">💰</div>
             <div class="price-pop" id="pricePop">
@@ -187,7 +186,6 @@
             <span id="syncIndicator" style="font-size:.58rem;font-weight:800;color:var(--t3)">🔴 أوفلاين</span>
             <div class="badge" onclick="openSettings()">⚙ <span id="goldPriceDisplay">12500</span> دج/غ</div>
             <div class="badge" id="userBadge" onclick="openSettings()" title="المستخدم الحالي" style="background:rgba(212,175,55,.15);border-color:var(--g400);color:var(--g400);cursor:pointer">👤 <span id="currentUserDisplay">—</span></div>
-            <div class="icon-btn" onclick="doLogout()" title="تسجيل الخروج" style="background:rgba(239,68,68,.12);color:var(--rd)"><i class="fas fa-sign-out-alt"></i></div>
             <div class="icon-btn" onclick="toggleDark()" id="darkBtn"><i class="fas fa-moon"></i></div>
             <div class="icon-btn" id="fsBtn" onclick="toggleFullscreen()" title="فول سكرين"><i class="fas fa-expand"></i></div>
             <div class="icon-btn" id="panicBtn" onclick="panicExit()" title="طوارئ"
@@ -987,6 +985,7 @@
             <button onclick="sendTelegramBackup(false)" style="flex:1;padding:.5rem;border-radius:8px;border:1.5px solid #229ED9;background:transparent;color:#229ED9;font-weight:800;cursor:pointer;font-family:Tajawal,"Noto Kufi Arabic","Noto Naskh Arabic",Arial,sans-serif;font-size:.76rem">📤 إرسال الآن</button>
         </div>
     </div>
+    <button onclick="closeModal('settingsModal');doLogout()" style="width:100%;padding:.6rem;margin-bottom:.6rem;border-radius:8px;border:1.5px solid #ef4444;background:transparent;color:#ef4444;font-weight:800;cursor:pointer;font-family:inherit;font-size:.8rem">🚪 تسجيل الخروج</button>
     <button onclick="showTrash()" style="width:100%;padding:.6rem;margin-bottom:.6rem;border-radius:8px;border:1.5px solid #64748b;background:transparent;color:#64748b;font-weight:800;cursor:pointer;font-family:Tajawal,"Noto Kufi Arabic","Noto Naskh Arabic",Arial,sans-serif;font-size:.8rem">
         🗑️ سلة المحذوفات (استرجاع)
     </button>
@@ -1034,13 +1033,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=146"></script>
-<script src="./app.js?v=146"></script>
-<script src="./assistant.js?v=146"></script>
-<script src="./inventory.js?v=146"></script>
-<script src="./invoice.js?v=146"></script>
-<script src="./raffinage.js?v=146"></script>
-<script src="./auth.js?v=146"></script>
+<script src="./firebase.js?v=147"></script>
+<script src="./app.js?v=147"></script>
+<script src="./assistant.js?v=147"></script>
+<script src="./inventory.js?v=147"></script>
+<script src="./invoice.js?v=147"></script>
+<script src="./raffinage.js?v=147"></script>
+<script src="./auth.js?v=147"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->

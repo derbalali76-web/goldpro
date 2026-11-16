@@ -54,9 +54,9 @@
 
         /* ─── Header ─── */
         .hdr{
-            background:var(--card);padding:.55rem 1rem;
+            background:var(--card);padding:.3rem 1rem;
             /* iPhone 16 Pro: مسافة معتدلة تحت الجزيرة الديناميكية دون فراغ زائد */
-            padding-top:max(.55rem, env(safe-area-inset-top));
+            padding-top:max(.3rem, env(safe-area-inset-top));
             padding-left:calc(1rem + env(safe-area-inset-left));
             padding-right:calc(1rem + env(safe-area-inset-right));
             border-bottom:1px solid var(--border);
@@ -66,10 +66,10 @@
         }
         .brand{display:flex;align-items:center;gap:.55rem}
         .logo{
-            width:38px;height:38px;
+            width:30px;height:30px;
             background:linear-gradient(135deg,var(--g400),var(--g600));
-            border-radius:12px;display:flex;align-items:center;justify-content:center;
-            font-size:1.15rem;color:#fff;flex-shrink:0;
+            border-radius:9px;display:flex;align-items:center;justify-content:center;
+            font-size:.95rem;color:#fff;flex-shrink:0;
             box-shadow:0 4px 14px rgba(245,158,11,.35);
         }
         .brand-text h2{font-size:.9rem;font-weight:900;color:var(--g700);line-height:1.1}
@@ -149,7 +149,7 @@
         #liqModal .modal{max-width:340px}
         .liq-locked{font-size:.7rem;color:var(--rd);font-weight:700;text-align:center;padding:.35rem;background:rgba(239,68,68,.08);border-radius:8px;border:1px solid rgba(239,68,68,.2);margin-top:.4rem}
         .icon-btn{
-            width:32px;height:32px;border-radius:8px;
+            width:28px;height:28px;border-radius:7px;
             border:1px solid var(--border);background:var(--card2);
             display:flex;align-items:center;justify-content:center;
             cursor:pointer;font-size:.78rem;color:var(--t2);transition:all .2s;
@@ -764,8 +764,8 @@
 
         /* ─── Mobile ─── */
         @media(max-width:639px){
-            .hdr{padding:.45rem .65rem}
-            .brand-text h2{font-size:.82rem}.logo{width:34px;height:34px;font-size:1rem}
+            .hdr{padding:.28rem .6rem;padding-top:max(.28rem, env(safe-area-inset-top))}
+            .brand-text h2{font-size:.82rem}.logo{width:28px;height:28px;font-size:.9rem}
             .main{padding:.5rem;gap:.5rem}
             .bgrid{gap:.4rem}.bcard{padding:.75rem .5rem}.ci{font-size:1.1rem;width:32px;height:32px}.cv{font-size:.95rem}
             .qgrid{gap:.4rem}.qcard{padding:.75rem .5rem}.qi{width:32px;height:32px;font-size:.95rem}.qt{font-size:.7rem}
