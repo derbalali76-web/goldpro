@@ -529,6 +529,7 @@ function openSettings(){
     if(ap)ap.style.display=isAdmin?'block':'none';
     if(isAdmin)renderUsersList();
     try{ const vi=document.getElementById('visionKeyInput'); if(vi)vi.value=_getVisionKey(); }catch(e){}
+    try{ const _tc=document.getElementById('tbTrashCount'); if(_tc){ const n=(window._tarbahTrash||[]).length; _tc.textContent=n?'('+n+')':''; } }catch(e){}
     /* إعدادات تلغرام */
     try{
         const tt=document.getElementById('tgToken'), tc=document.getElementById('tgChat'), ta=document.getElementById('tgAuto');
@@ -905,7 +906,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v147';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v149';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1698,16 +1699,28 @@ const _tarbahKey=()=>'tarbah_notes_'+(typeof _SITE!=='undefined'&&_SITE?_SITE+'_
 window._tarbahList=[];
 window._tarbahDel=[];                 /* شواهد الحذف (tombstones) — تمنع عودة المحذوف وتمنع مسح الجديد */
 const _tarbahDelKey=()=>_tarbahKey()+'_del';
+/* سلة محذوفات الترباح: نسخ كاملة من المحذوف + شواهد لما أُفرغ/استُرجع من السلة (للمزامنة) */
+window._tarbahTrash=[];
+window._tarbahGone=[];
+const _tarbahTrashKey=()=>_tarbahKey()+'_trash';
+const _tarbahGoneKey=()=>_tarbahKey()+'_gone';
 window._loadTarbah=()=>{
     try{ window._tarbahList=JSON.parse(localStorage.getItem(_tarbahKey())||'[]')||[]; }catch(e){ window._tarbahList=[]; }
     try{ window._tarbahDel=JSON.parse(localStorage.getItem(_tarbahDelKey())||'[]')||[]; }catch(e){ window._tarbahDel=[]; }
+    try{ window._tarbahTrash=JSON.parse(localStorage.getItem(_tarbahTrashKey())||'[]')||[]; }catch(e){ window._tarbahTrash=[]; }
+    try{ window._tarbahGone=JSON.parse(localStorage.getItem(_tarbahGoneKey())||'[]')||[]; }catch(e){ window._tarbahGone=[]; }
     if(typeof _renderTarbahList==='function')_renderTarbahList();
 };
 /* تسلسل القائمة + شواهد الحذف معاً للمزامنة السحابية */
-window._tarbahSerialize=()=>{ try{return JSON.stringify({list:(window._tarbahList||[]),del:(window._tarbahDel||[])});}catch(e){return '{"list":[],"del":[]}';} };
+window._tarbahSerialize=()=>{ try{return JSON.stringify({list:(window._tarbahList||[]),del:(window._tarbahDel||[]),trash:(window._tarbahTrash||[]),gone:(window._tarbahGone||[])});}catch(e){return '{"list":[],"del":[]}';} };
+function _tarbahSaveTrashLocal(){
+    try{localStorage.setItem(_tarbahTrashKey(),JSON.stringify(window._tarbahTrash||[]));}catch(e){}
+    try{localStorage.setItem(_tarbahGoneKey(),JSON.stringify(window._tarbahGone||[]));}catch(e){}
+}
 function _tarbahPersist(){
     try{localStorage.setItem(_tarbahKey(),JSON.stringify(window._tarbahList||[]));}catch(e){}
     try{localStorage.setItem(_tarbahDelKey(),JSON.stringify(window._tarbahDel||[]));}catch(e){}
+    _tarbahSaveTrashLocal();
     if(typeof _scheduleSave==='function')_scheduleSave();   /* مزامنة عبر الأجهزة عبر إعدادات Firebase */
 }
 /* دمج الوارد من السحابة بدل استبداله: اتحاد بالمعرّف ناقص المحذوف — فلا تختفي إضافة حديثة */
@@ -1724,9 +1737,20 @@ window._applyTarbah=(jsonStr)=>{
         (incList||[]).forEach(x=>{ if(x&&x.id&&!byId.has(x.id))byId.set(x.id,x); });     /* ثم الجديد من السحابة */
         window._tarbahList=[...byId.values()].filter(x=>!del.has(x.id)); /* احذف ما في الشواهد فقط */
         window._tarbahDel=[...del];
+        /* دمج السلة: اتحاد بالمعرّف ناقص ما أُفرغ أو استُرجع */
+        const incTrash=(inc&&!Array.isArray(inc)&&Array.isArray(inc.trash))?inc.trash:[];
+        const incGone=(inc&&!Array.isArray(inc)&&Array.isArray(inc.gone))?inc.gone:[];
+        const gone=new Set([...(window._tarbahGone||[]),...incGone]);
+        const tById=new Map();
+        (window._tarbahTrash||[]).forEach(x=>{ if(x&&x.id)tById.set(x.id,x); });
+        incTrash.forEach(x=>{ if(x&&x.id&&!tById.has(x.id))tById.set(x.id,x); });
+        window._tarbahTrash=[...tById.values()].filter(x=>!gone.has(x.id)).sort((a,b)=>(b._delAt||0)-(a._delAt||0)).slice(0,300);
+        window._tarbahGone=[...gone];
         try{localStorage.setItem(_tarbahKey(),JSON.stringify(window._tarbahList));}catch(e){}
         try{localStorage.setItem(_tarbahDelKey(),JSON.stringify(window._tarbahDel));}catch(e){}
+        _tarbahSaveTrashLocal();
         if(typeof _renderTarbahList==='function')_renderTarbahList();
+        if(document.getElementById('tarbahTrashModal')?.classList.contains('active'))_renderTarbahTrash();
     }catch(e){}
 };
 let _tbType='buy';
@@ -1783,6 +1807,8 @@ window.addTarbah=()=>{
     document.getElementById('tbName').focus();
 };
 window.delTarbah=(id)=>{
+    const _it=(window._tarbahList||[]).find(x=>x.id===id);
+    if(_it){ (window._tarbahTrash=window._tarbahTrash||[]).unshift({..._it,_delAt:Date.now()}); window._tarbahTrash=window._tarbahTrash.slice(0,300); }
     window._tarbahList=(window._tarbahList||[]).filter(x=>x.id!==id);
     if(id&&(window._tarbahDel=window._tarbahDel||[]).indexOf(id)===-1)window._tarbahDel.push(id);  /* شاهد حذف ليبقى محذوفاً عبر الأجهزة */
     _tarbahPersist(); _renderTarbahList(); try{updAll();}catch(e){}
@@ -1790,6 +1816,7 @@ window.delTarbah=(id)=>{
 function _renderTarbahList(){
     const box=document.getElementById('tarbahList'); if(!box)return;
     const L=window._tarbahList||[];
+    const _tc=document.getElementById('tbTrashCount'); if(_tc){ const n=(window._tarbahTrash||[]).length; _tc.textContent=n?'('+n+')':''; }
     if(!L.length){ box.innerHTML='<div style="text-align:center;color:var(--t2);font-size:.8rem;padding:1rem">لا ملاحظات بعد</div>'; return; }
     const num=v=>{ const n=parseFloat(String(v||'').replace(/\s/g,'').replace(',','.')); return isFinite(n)?n:0; };
     let totW=0, wpSum=0, wSum=0, pSum=0, pCount=0;
@@ -1818,6 +1845,76 @@ function _renderTarbahList(){
     box.innerHTML=summary+items;
 }
 window._renderTarbahList=_renderTarbahList;
+
+/* ═══ سلة محذوفات الترباح ═══ */
+function _ensureTarbahTrashModal(){
+    if(document.getElementById('tarbahTrashModal'))return;
+    const div=document.createElement('div');
+    div.id='tarbahTrashModal'; div.className='modal-overlay';
+    div.onclick=(e)=>{ if(e.target===div) closeModal('tarbahTrashModal'); };
+    div.innerHTML=`
+    <div class="modal-box" style="max-width:420px">
+        <div class="modal-header">
+            <h3 style="font-size:.95rem">🗑️ سلة محذوفات الترباح</h3>
+            <button class="close-btn" onclick="closeModal('tarbahTrashModal')">✕</button>
+        </div>
+        <div style="padding:.9rem;display:flex;flex-direction:column;gap:.6rem">
+            <div id="tarbahTrashList" style="display:flex;flex-direction:column;gap:.4rem;max-height:55vh;overflow-y:auto"></div>
+            <button onclick="emptyTarbahTrash()" style="width:100%;padding:.5rem;border-radius:10px;border:1.5px solid #dc2626;background:transparent;color:#dc2626;font-weight:800;font-size:.82rem;font-family:inherit;cursor:pointer">إفراغ السلة نهائياً</button>
+        </div>
+    </div>`;
+    document.body.appendChild(div);
+}
+window.openTarbahTrash=()=>{
+    _ensureTarbahTrashModal();
+    _renderTarbahTrash();
+    document.getElementById('tarbahTrashModal').classList.add('active');
+};
+function _renderTarbahTrash(){
+    const box=document.getElementById('tarbahTrashList'); if(!box)return;
+    const T=window._tarbahTrash||[];
+    if(!T.length){ box.innerHTML='<div style="text-align:center;color:var(--t2);font-size:.8rem;padding:1rem">السلة فارغة</div>'; return; }
+    box.innerHTML=T.map(x=>{
+        const badge=x.type==='sell'?'<span style="color:#dc2626;font-weight:800">بيع</span> · ':x.type==='buy'?'<span style="color:#16a34a;font-weight:800">شراء</span> · ':'';
+        const when=x._delAt?new Date(x._delAt).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:.55rem .7rem">
+            <div style="font-size:.84rem;line-height:1.5;color:var(--t)">
+                ${badge}<strong>${x.name||'—'}</strong>${x.weight?` · ⚖️ ${x.weight}`:''}${x.price?` · 💵 ${x.price}`:''}
+                <div style="font-size:.66rem;color:var(--t3)">حُذف: ${when}</div>
+            </div>
+            <div style="display:flex;gap:.3rem;flex-shrink:0">
+                <button onclick="restoreTarbah('${x.id}')" title="استرجاع" style="background:rgba(22,163,74,.12);border:1px solid #16a34a;color:#16a34a;border-radius:8px;padding:.3rem .5rem;font-size:.75rem;font-weight:800;cursor:pointer;font-family:inherit">↩️ استرجاع</button>
+                <button onclick="purgeTarbah('${x.id}')" title="حذف نهائي" style="background:transparent;border:none;color:#dc2626;font-size:1rem;cursor:pointer">✖</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+window._renderTarbahTrash=_renderTarbahTrash;
+function _tarbahGoneAdd(id){ if(id&&(window._tarbahGone=window._tarbahGone||[]).indexOf(id)===-1)window._tarbahGone.push(id); }
+window.restoreTarbah=(id)=>{
+    const it=(window._tarbahTrash||[]).find(x=>x.id===id); if(!it)return;
+    window._tarbahTrash=window._tarbahTrash.filter(x=>x.id!==id);
+    _tarbahGoneAdd(id);
+    const {_delAt,...rest}=it;
+    /* معرّف جديد: القديم عليه شاهد حذف فلا يعود بالمزامنة */
+    window._tarbahList.unshift({...rest,id:'tb'+Date.now()+Math.random().toString(36).slice(2,6)});
+    _tarbahPersist(); _renderTarbahList(); _renderTarbahTrash(); try{updAll();}catch(e){}
+    toast('↩️ استُرجعت الملاحظة','success');
+};
+window.purgeTarbah=(id)=>{
+    window._tarbahTrash=(window._tarbahTrash||[]).filter(x=>x.id!==id);
+    _tarbahGoneAdd(id);
+    _tarbahPersist(); _renderTarbahList(); _renderTarbahTrash();
+};
+window.emptyTarbahTrash=()=>{
+    const T=window._tarbahTrash||[];
+    if(!T.length)return;
+    if(!confirm('إفراغ سلة الترباح نهائياً؟ ('+T.length+' عنصر)'))return;
+    T.forEach(x=>_tarbahGoneAdd(x.id));
+    window._tarbahTrash=[];
+    _tarbahPersist(); _renderTarbahList(); _renderTarbahTrash();
+    toast('تم إفراغ السلة','info');
+};
 function _restoreDubaiCalcInputs(){
     try{
         const raw=localStorage.getItem(_dcKey());
