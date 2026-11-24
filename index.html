@@ -12,15 +12,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#01406c">
     <title>Calculator</title>
-    <link rel="manifest" href="manifest.json?v=149">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=149">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=149">
+    <link rel="manifest" href="manifest.json?v=150">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/calc-192.png?v=150">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/calc-512.png?v=150">
     <!-- أيقونات Apple (iPhone/iPad) — كل المقاسات لضمان الظهور -->
-    <link rel="apple-touch-icon" href="icons/calc-180.png?v=149">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=149">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=149">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=149">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=149">
+    <link rel="apple-touch-icon" href="icons/calc-180.png?v=150">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/calc-180.png?v=150">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/calc-167.png?v=150">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/calc-152.png?v=150">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/calc-120.png?v=150">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- تحميل غير حاجب: النصّ يظهر فوراً بخطّ احتياطي عربي ثم يُبدَّل -->
@@ -72,7 +72,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=149">
+    <link rel="stylesheet" href="./style.css?v=150">
 </head>
 <body>
 <!-- ═══════════ قناع الآلة الحاسبة (تصميم فاتح · الكود 0505 يكشف التطبيق) ═══════════ -->
@@ -213,12 +213,12 @@
                 </div>
             </div>
             <div class="bgrid">
-                <div class="bcard bcard-din" style="position:relative">
+                <div class="bcard bcard-din clickable" style="position:relative;cursor:pointer" onclick="openLiqAudit()">
                     <div class="bcard-accent" style="background:var(--bl)"></div>
                     <div class="ci" style="color:var(--bl)"><i class="fas fa-wallet"></i></div>
                     <span class="cl">السيولة</span>
                     <span class="cv" id="dinarBal">0<small> DZD</small></span>
-                    <button id="liqEditBtn" onclick="openLiqEdit()" title="تعديل الأرصدة الافتتاحية"
+                    <button id="liqEditBtn" onclick="event.stopPropagation();openLiqEdit()" title="تعديل الأرصدة الافتتاحية"
                         style="position:absolute;top:.35rem;left:.35rem;width:22px;height:22px;border-radius:6px;
                         border:1px solid var(--bl);background:rgba(59,130,246,.12);color:var(--bl);
                         font-size:.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
@@ -1034,13 +1034,13 @@
 
 
 <!-- ═══ ملفات JS ═══ -->
-<script src="./firebase.js?v=149"></script>
-<script src="./app.js?v=149"></script>
-<script src="./assistant.js?v=149"></script>
-<script src="./inventory.js?v=149"></script>
-<script src="./invoice.js?v=149"></script>
-<script src="./raffinage.js?v=149"></script>
-<script src="./auth.js?v=149"></script>
+<script src="./firebase.js?v=150"></script>
+<script src="./app.js?v=150"></script>
+<script src="./assistant.js?v=150"></script>
+<script src="./inventory.js?v=150"></script>
+<script src="./invoice.js?v=150"></script>
+<script src="./raffinage.js?v=150"></script>
+<script src="./auth.js?v=150"></script>
 
 
 <!-- ═══ شاشة السيريل نامبر ═══ -->

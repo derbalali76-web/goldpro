@@ -682,7 +682,21 @@ function _reproject(){
         g730:[],g24:[],debts:[],loans:[],
         ops:[],invoices:[],dollInvoices:[],rafInvoices:[],dubaiInvoices:[]
     };
-    live.forEach(evt=>_applyEvt(st,evt));
+    /* سجلّ تدقيق السيولة: كل حدث غيّر رصيد الدينار مع الرصيد بعده */
+    const _liqTrail=[];
+    const _LQN={INVOICE_BUY:'فاتورة شراء',INVOICE_SELL:'فاتورة بيع',RAF:'رافيناج',DUBAI:'دبي',DUBAI_BUY:'شراء دبي',DOLLAR:'دولار',GT:'تسليم/استلام',SHIP:'شحن',EXPENSE:'مصاريف',SETTLE:'تصفية',SETTLE_GSM:'تصفية ذهب',SETTLE_DOLLAR:'تصفية دولار',XFER:'تحويل',LOAN:'سلف',SELL:'بيع سبيكة',OPENING:'رصيد افتتاحي',CONV_GOLD:'تحويل لذهب',TO_CAPITAL:'تحويل لرأس المال',DEBT_FIX:'ضبط رصيد'};
+    live.forEach(evt=>{
+        const _b=st.B.دينار||0;
+        _applyEvt(st,evt);
+        const _a=st.B.دينار||0;
+        if(Math.abs(_a-_b)>0.0001){
+            const op=evt.display&&evt.display.op;
+            let lbl=op&&op.t?(op.t+(op.c?' — '+op.c:'')):(_LQN[evt.type]||evt.type);
+            if(!(op&&op.t)&&evt.data&&(evt.data.c||evt.data.o))lbl+=' — '+(evt.data.c||evt.data.o);
+            _liqTrail.push({id:evt.id,ts:evt.ts||0,lbl,delta:_a-_b,after:_a});
+        }
+    });
+    window._liqTrail=_liqTrail;
 
     B=st.B;
     g730=st.g730;g24=st.g24;

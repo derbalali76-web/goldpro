@@ -906,7 +906,7 @@ window.showGTBalance=()=>{
 };
 window.openGiveTake=(t)=>{
     gtType=(t==='give')?'give':'take';
-    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v149';
+    document.getElementById('gtTitle').textContent=(t==='give'?'🟢 تسليم (أعطيت)':'🔴 استلام (قبضت)')+' • v150';
     document.getElementById('gtSaveBtn').className=t==='give'?'bg':'br';
     document.getElementById('gtCustomer').value='';
     document.getElementById('gtAmount').value='';
@@ -1499,6 +1499,65 @@ window.confirmToCapital=()=>{
              note:'من ذهب البيع: '+fmt(w,2)+' غ 730 = '+fmt(w24,3)+' غ 24'}});
     closeModal('toCapModal');
     toast(`🏦 حُوّل ${fmt(w,2)} غ (730) = ${fmt(w24,3)} غ 24 إلى ${c}`,'success');
+};
+/* ═══════════ تدقيق السيولة: كل عملية غيّرت الدينار + الرصيد بعدها ═══════════ */
+function _ensureLiqAuditModal(){
+    if(document.getElementById('liqAuditModal'))return;
+    const div=document.createElement('div');
+    div.id='liqAuditModal'; div.className='modal-overlay';
+    div.onclick=(e)=>{ if(e.target===div) closeModal('liqAuditModal'); };
+    div.innerHTML=`
+    <div class="modal-box" style="max-width:640px;width:96vw">
+        <div class="modal-header">
+            <h3 style="font-size:.95rem;color:#0ea5e9">📋 تدقيق السيولة — <span id="liqAuCount">0</span> عملية</h3>
+            <button class="close-btn" onclick="closeModal('liqAuditModal')">✕</button>
+        </div>
+        <div style="padding:.6rem .7rem">
+            <input id="liqAuSearch" type="text" placeholder="🔍 بحث بالاسم أو نوع العملية" oninput="_renderLiqAudit()"
+                style="width:100%;box-sizing:border-box;padding:.5rem .6rem;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--card);color:var(--t);margin-bottom:.5rem">
+            <div style="max-height:62vh;overflow:auto;border:1px solid var(--border);border-radius:10px">
+                <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+                    <thead style="position:sticky;top:0;background:var(--card2);z-index:1">
+                        <tr style="color:var(--t2)">
+                            <th style="padding:.45rem;text-align:right">التاريخ</th>
+                            <th style="padding:.45rem;text-align:right">العملية</th>
+                            <th style="padding:.45rem;text-align:left">Δ السيولة</th>
+                            <th style="padding:.45rem;text-align:left">الرصيد بعده</th>
+                        </tr>
+                    </thead>
+                    <tbody id="liqAuBody"></tbody>
+                </table>
+            </div>
+            <div style="text-align:center;font-weight:900;margin-top:.6rem;font-size:.92rem">الرصيد الختامي: <span id="liqAuFinal" style="color:var(--g400)"></span> دج</div>
+        </div>
+    </div>`;
+    document.body.appendChild(div);
+}
+window.openLiqAudit=()=>{
+    _ensureLiqAuditModal();
+    const se=document.getElementById('liqAuSearch'); if(se)se.value='';
+    _renderLiqAudit();
+    document.getElementById('liqAuditModal').classList.add('active');
+};
+window._renderLiqAudit=()=>{
+    const body=document.getElementById('liqAuBody'); if(!body)return;
+    const all=(window._liqTrail||[]).slice().reverse();          /* الأحدث أولاً */
+    const q=((document.getElementById('liqAuSearch')||{}).value||'').trim().toLowerCase();
+    const L=q?all.filter(r=>(r.lbl||'').toLowerCase().includes(q)):all;
+    document.getElementById('liqAuCount').textContent=all.length;
+    document.getElementById('liqAuFinal').textContent=fmt(B.دينار||0,0);
+    const MAX=600, shown=L.slice(0,MAX);
+    body.innerHTML=shown.map(r=>{
+        const pos=r.delta>0, col=pos?'#16a34a':'#dc2626';
+        const dt=r.ts?new Date(r.ts).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
+        return `<tr style="border-top:1px solid var(--border)">
+            <td style="padding:.45rem;color:var(--t3);white-space:nowrap;font-size:.7rem">${dt}</td>
+            <td style="padding:.45rem;color:var(--t)">${r.lbl}</td>
+            <td style="padding:.45rem;text-align:left;direction:ltr;color:${col};font-weight:800;white-space:nowrap">${pos?'+':'−'}${fmt(Math.abs(r.delta),0)}</td>
+            <td style="padding:.45rem;text-align:left;direction:ltr;color:var(--t);white-space:nowrap">${fmt(r.after,0)}</td>
+        </tr>`;
+    }).join('')+(L.length>MAX?`<tr><td colspan="4" style="padding:.6rem;text-align:center;color:var(--t3);font-size:.72rem">عُرضت آخر ${MAX} من ${L.length} — استعمل البحث للمزيد</td></tr>`:'')
+      +(!L.length?'<tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--t3)">لا عمليات</td></tr>':'');
 };
 window.saveTelegramConfig=()=>{
     const t=(document.getElementById('tgToken').value||'').trim();
